@@ -1,0 +1,78 @@
+---
+description: React 19 API patterns — use(), useActionState, useTransition, useOptimistic, form actions
+globs: **/*.{ts,tsx}
+alwaysApply: false
+---
+
+# React 19 Patterns
+
+Prefer React 19 APIs over older alternatives.
+
+## `use()` for promises and context
+
+Use `use()` to unwrap promises (e.g. Next.js async params) or read context inside conditionals. It replaces `useContext` and manual `.then()` chains.
+
+```tsx
+import { use } from "react";
+
+export default function Page({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = use(params);
+  return <Detail id={id} />;
+}
+```
+
+## `useActionState` for form mutations
+
+Pair with `<form action={...}>` for server-round-trip forms. Returns `[state, formAction, isPending]`.
+
+```tsx
+const [state, submitAction, isPending] = useActionState(createLayer, initialState);
+
+return (
+  <form action={submitAction}>
+    <input name="name" />
+    <button disabled={isPending}>Save</button>
+    {state.error && <p>{state.error}</p>}
+  </form>
+);
+```
+
+## `useTransition` for non-urgent updates
+
+Wrap expensive state updates so they don't block typing or animations.
+
+```tsx
+const [isPending, startTransition] = useTransition();
+
+function handleFilter(query: string) {
+  setInputValue(query);
+  startTransition(() => {
+    setFilteredResults(filterLayers(query));
+  });
+}
+```
+
+## `useOptimistic` for instant feedback
+
+Show the expected result immediately while the async operation runs.
+
+```tsx
+const [optimisticLayers, addOptimistic] = useOptimistic(layers);
+
+async function handleAdd(layer: Layer) {
+  addOptimistic([...optimisticLayers, layer]);
+  await apiFetch("/api/layers", { method: "POST", body: layer });
+}
+```
+
+## Ref cleanup functions
+
+Return a cleanup function from ref callbacks instead of using `useEffect` for DOM setup/teardown.
+
+```tsx
+<canvas ref={(node) => {
+  if (!node) return;
+  const ctx = node.getContext("2d");
+  return () => { /* cleanup */ };
+}} />
+```

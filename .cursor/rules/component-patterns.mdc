@@ -1,0 +1,55 @@
+---
+description: Component conventions — exports, props, directives, composition, file organization
+globs: **/*.tsx
+alwaysApply: false
+---
+
+# Component Patterns
+
+## Exports
+
+- **Named exports** for all components: `export function LayerPanel() {}`
+- **Default exports** only in route files (`page.tsx`, `layout.tsx`)
+
+## Props
+
+Define an explicit `interface` above the component. Never use inline object types.
+
+```tsx
+interface LayerCardProps {
+  layer: LayerConfig;
+  onSelect: (id: string) => void;
+}
+
+export function LayerCard({ layer, onSelect }: LayerCardProps) {}
+```
+
+## `"use client"` directive
+
+Add `"use client"` only to files that use hooks, browser APIs, or event handlers. Never add it to files that could remain Server Components. Push the boundary as far down the tree as possible.
+
+## Composition over prop drilling
+
+Accept `children: React.ReactNode` for wrapper/layout components instead of passing deeply nested props. Use Zustand or context for cross-cutting state.
+
+## File organization
+
+- Feature UI: `features/<domain>/components/<component>.tsx`
+- Feature hooks: `features/<domain>/hooks/use-<name>.ts`
+- Feature store: `features/<domain>/store.ts`
+- Feature types: `features/<domain>/types.ts`
+- Shared UI primitives: `components/ui/`
+- Layout shell: `components/layout/`
+
+## Heavy client-only libraries
+
+Use `next/dynamic` with `ssr: false` for components that depend on browser-only libraries (maplibre-gl, deck.gl, ag-grid, monaco-editor, recharts).
+
+```tsx
+import dynamic from "next/dynamic";
+
+const MapContainer = dynamic(
+  () => import("@/features/map/components/map-container").then((m) => m.MapContainer),
+  { ssr: false },
+);
+```

@@ -1,0 +1,57 @@
+---
+description: State management — Zustand for client state, React Query for server state, clear boundaries
+globs: **/*.{ts,tsx}
+alwaysApply: false
+---
+
+# State Management
+
+## Zustand — client/UI state
+
+One store per feature domain at `features/<domain>/store.ts`.
+
+**Always use atomic selectors** to prevent full-store re-renders:
+
+```ts
+// BAD — subscribes to every field
+const store = useMapStore();
+
+// GOOD — subscribes only to viewState
+const viewState = useMapStore((s) => s.viewState);
+```
+
+Use `getState()` for imperative access in callbacks, map event handlers, or mutation side effects — never call the hook outside a component.
+
+```ts
+const { activeLayerId } = useEditingStore.getState();
+```
+
+## React Query — server/async state
+
+**Always use key factories** from `lib/query/keys.ts`. Never write inline key arrays.
+
+```ts
+// BAD
+useQuery({ queryKey: ["features", layerId], queryFn: ... });
+
+// GOOD
+useQuery({ queryKey: queryKeys.features.list({ layer: layerId }), queryFn: ... });
+```
+
+Add new key shapes to `lib/query/keys.ts` when introducing new queries.
+
+Keep `queryFn` thin — delegate to `apiFetch` from `lib/api/client.ts`:
+
+```ts
+useQuery({
+  queryKey: queryKeys.layers.all,
+  queryFn: () => apiFetch<LayerConfig[]>("/api/layers"),
+});
+```
+
+## Boundary rule
+
+- **Zustand** owns UI state: view state, active panel, editing mode, selections
+- **React Query** owns server state: layers list, features, geocode results
+
+Never duplicate server data into Zustand for long-term storage. If a query result needs to seed a Zustand slice temporarily (e.g. for editing), sync it via `useEffect` and keep the query as the source of truth.

@@ -1,0 +1,52 @@
+services:
+  postgis:
+    image: postgis/postgis:16-3.4
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: gis_web
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  martin:
+    image: ghcr.io/maplibre/martin:v0.15.0
+    ports:
+      - "3030:3030"
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@postgis:5432/gis_web
+    depends_on:
+      postgis:
+        condition: service_healthy
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+
+  osrm:
+    image: ghcr.io/project-osrm/osrm-backend:v6.0.0
+    ports:
+      - "5050:5000"
+    volumes:
+      - osrm-data:/data
+    command: osrm-routed --algorithm mld /data/region.osrm
+    mem_reservation: 10g
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:5000/route/v1/car/-77.0,38.9;-77.1,38.9?overview=false || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    profiles:
+      - routing
+
+volumes:
+  pgdata:
+  osrm-data:

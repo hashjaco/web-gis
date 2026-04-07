@@ -1,0 +1,52 @@
+---
+description: React Compiler compatibility — never manually memoize, never mutate, never touch refs during render
+globs: **/*.{ts,tsx}
+alwaysApply: false
+---
+
+# React Compiler Rules
+
+This project has `reactCompiler: true` in `next.config.ts`. The compiler auto-memoizes components, hooks, and expressions. Follow these rules so it can do its job.
+
+## No manual memoization
+
+Do not use `React.memo`, `useMemo`, or `useCallback`. The compiler inserts equivalent caching automatically; manual wrappers conflict or produce redundant work.
+
+```tsx
+// BAD
+const sorted = useMemo(() => items.toSorted(cmp), [items, cmp]);
+
+// GOOD
+const sorted = items.toSorted(cmp);
+```
+
+## Never mutate — always create new references
+
+The compiler skips re-renders when references are unchanged. Mutation breaks this.
+
+```ts
+// BAD
+layers.push(newLayer);
+setLayers(layers);
+
+// GOOD
+setLayers([...layers, newLayer]);
+```
+
+## Never read or write refs during render
+
+Ref access is allowed only inside effects, event handlers, and cleanup functions.
+
+```tsx
+// BAD — ref read during render
+return <p>{inputRef.current?.value}</p>;
+
+// GOOD — ref read in an effect
+useEffect(() => {
+  inputRef.current?.focus();
+}, []);
+```
+
+## Never call hooks conditionally or in loops
+
+Hooks must be called at the top level of a component or custom hook, every render, in the same order.

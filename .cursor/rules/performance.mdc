@@ -1,0 +1,42 @@
+---
+description: Performance priorities — compiler trust, server components, dynamic imports, transitions, CSS-first
+alwaysApply: true
+---
+
+# Performance
+
+## Trust the React Compiler
+
+Do not add `React.memo`, `useMemo`, or `useCallback`. The compiler (enabled in `next.config.ts`) handles memoization automatically. Manual wrappers add overhead and can conflict.
+
+## Server Components first
+
+Keep components as Server Components by default. Only add `"use client"` when the file genuinely needs hooks, event handlers, or browser APIs. Push the client boundary as deep into the tree as possible so the server can stream more HTML.
+
+## Dynamic imports for heavy libraries
+
+Use `next/dynamic` with `ssr: false` for components that depend on large browser-only packages: maplibre-gl, deck.gl, ag-grid, monaco-editor, recharts, onnxruntime-web, tensorflow.js.
+
+## Zustand selectors
+
+Always select individual fields — never call a store hook without a selector. A bare `useMapStore()` re-renders on every store change.
+
+## React Query cache tuning
+
+Set `staleTime` appropriate to the data's volatility. The global default is in `lib/query/provider.tsx`; override per-query when needed. Avoid redundant refetches by using `initialData` or `placeholderData` from the cache.
+
+## `startTransition` for expensive updates
+
+Wrap state updates that trigger heavy re-renders (filtering large datasets, switching visualization modes) in `startTransition` so they don't block user input.
+
+```ts
+import { startTransition } from "react";
+
+startTransition(() => {
+  setFilteredFeatures(applyFilter(allFeatures, query));
+});
+```
+
+## CSS over JS
+
+Prefer Tailwind classes for animations, transitions, and layout shifts. Avoid JS-driven animations unless the animation depends on runtime values that CSS cannot express.
