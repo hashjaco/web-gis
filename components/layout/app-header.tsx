@@ -1,17 +1,63 @@
 "use client";
 
 import { Show, UserButton } from "@clerk/nextjs";
-import { Link2, Map } from "lucide-react";
+import { Check, Cloud, Link2, Loader2, Map, Save } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { useProjectStore } from "@/features/projects/store";
+import { useSaveProject } from "@/features/projects/hooks/use-project-mutations";
 import { GeocodeSearch } from "@/features/search/components/geocode-search";
 import { useUrlState } from "@/features/sharing/hooks/use-url-state";
 import { OnlineIndicator } from "./online-indicator";
 import { ThemeToggle } from "./theme-toggle";
 
-export function AppHeader() {
+interface AppHeaderProps {
+  onCreateProject?: () => void;
+}
+
+function SaveStatus() {
+  const activeProject = useProjectStore((s) => s.activeProject);
+  const isDirty = useProjectStore((s) => s.isDirty);
+  const isSaving = useProjectStore((s) => s.isSaving);
+  const lastSavedAt = useProjectStore((s) => s.lastSavedAt);
+
+  if (!activeProject) return null;
+
+  if (isSaving) {
+    return (
+      <span className="flex items-center gap-1 text-xs text-muted-foreground">
+        <Loader2 className="h-3 w-3 animate-spin" />
+        Saving...
+      </span>
+    );
+  }
+
+  if (isDirty) {
+    return (
+      <span className="flex items-center gap-1 text-xs text-muted-foreground">
+        <Cloud className="h-3 w-3" />
+        Unsaved changes
+      </span>
+    );
+  }
+
+  if (lastSavedAt) {
+    return (
+      <span className="flex items-center gap-1 text-xs text-muted-foreground">
+        <Check className="h-3 w-3" />
+        Saved
+      </span>
+    );
+  }
+
+  return null;
+}
+
+export function AppHeader({ onCreateProject }: AppHeaderProps) {
   const { copyShareLink } = useUrlState();
   const [copied, setCopied] = useState(false);
+  const activeProject = useProjectStore((s) => s.activeProject);
+  const save = useSaveProject();
 
   useEffect(() => {
     if ("serviceWorker" in navigator) {
@@ -25,16 +71,51 @@ export function AppHeader() {
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const handleSave = () => {
+    if (activeProject) {
+      save.mutate(activeProject.id);
+    } else {
+      onCreateProject?.();
+    }
+  };
+
   return (
     <header className="flex h-12 shrink-0 items-center justify-between border-b bg-background px-4">
-      <div className="flex items-center gap-2">
-        <Map className="h-5 w-5 text-primary" />
-        <span className="text-sm font-semibold tracking-tight">ShimGIS</span>
+      <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
+          <Map className="h-5 w-5 text-primary" />
+          <span className="text-sm font-semibold tracking-tight">ShimGIS</span>
+        </div>
+        {activeProject && (
+          <>
+            <span className="text-muted-foreground">/</span>
+            <span className="max-w-[200px] truncate text-sm font-medium">
+              {activeProject.name}
+            </span>
+            <SaveStatus />
+          </>
+        )}
       </div>
 
       <GeocodeSearch />
 
       <div className="flex items-center gap-3">
+        <Show when="signed-in">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                type="button"
+                onClick={handleSave}
+                className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+              >
+                <Save className="h-4 w-4" />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent>
+              {activeProject ? "Save project" : "Save as new project"}
+            </TooltipContent>
+          </Tooltip>
+        </Show>
         <Tooltip>
           <TooltipTrigger asChild>
             <button

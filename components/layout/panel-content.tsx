@@ -93,6 +93,8 @@ export function PanelContent({ activePanel }: PanelContentProps) {
   }
 
   switch (activePanel) {
+    case "home":
+      return null;
     case "layers":
       return <LayerPanel />;
     case "editing":

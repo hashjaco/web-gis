@@ -6,6 +6,7 @@ import {
   Download,
   Eye,
   FileUp,
+  Home,
   LayoutDashboard,
   Layers,
   Lock,
@@ -30,7 +31,6 @@ interface NavItem {
 }
 
 const standardItems: NavItem[] = [
-  { icon: LayoutDashboard, label: "Dashboard", id: "dashboard" },
   { icon: Layers, label: "Layers", id: "layers" },
   { icon: FileUp, label: "Import", id: "import" },
   { icon: Pencil, label: "Edit", id: "editing" },
@@ -40,6 +40,7 @@ const standardItems: NavItem[] = [
 
 const proItems: NavItem[] = [
   { icon: BarChart3, label: "Analysis", id: "analysis" },
+  { icon: LayoutDashboard, label: "Dashboard", id: "dashboard" },
   { icon: Eye, label: "Visualize", id: "visualization" },
   { icon: Satellite, label: "Imagery", id: "imagery" },
   { icon: Brain, label: "GeoAI", id: "geoai" },
@@ -50,10 +51,17 @@ const proItems: NavItem[] = [
 
 interface AppSidebarProps {
   activePanel: string | null;
+  showHome: boolean;
   onPanelChange: (panel: string | null) => void;
+  onHomeClick: () => void;
 }
 
-export function AppSidebar({ activePanel, onPanelChange }: AppSidebarProps) {
+export function AppSidebar({
+  activePanel,
+  showHome,
+  onPanelChange,
+  onHomeClick,
+}: AppSidebarProps) {
   const [collapsed, setCollapsed] = useState(false);
   const { canAccess } = useUserPlan();
 
@@ -102,6 +110,26 @@ export function AppSidebar({ activePanel, onPanelChange }: AppSidebarProps) {
       )}
     >
       <nav className="flex flex-1 flex-col gap-1 p-2">
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button
+              type="button"
+              onClick={onHomeClick}
+              className={cn(
+                "flex items-center gap-3 rounded-md px-2 py-2 text-sm font-medium transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+                showHome &&
+                  !activePanel &&
+                  "bg-sidebar-accent text-sidebar-accent-foreground",
+              )}
+            >
+              <Home className="h-4 w-4 shrink-0" />
+              {!collapsed && <span>Home</span>}
+            </button>
+          </TooltipTrigger>
+          <TooltipContent side="right">Home</TooltipContent>
+        </Tooltip>
+
+        <div className="my-1 border-t" />
         {standardItems.map((item) => renderNavItem(item))}
         <div className="my-1 border-t" />
         {proItems.map((item) => renderNavItem(item))}
