@@ -1,8 +1,9 @@
 "use client";
 
 import "maplibre-gl/dist/maplibre-gl.css";
+import type maplibregl from "maplibre-gl";
 import type { MapLayerMouseEvent } from "maplibre-gl";
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { MapRef } from "react-map-gl/maplibre";
 import { Map } from "react-map-gl/maplibre";
 import { useLayerSources } from "@/features/layers/hooks/use-layer-sources";
@@ -11,6 +12,7 @@ import { useDraw } from "@/features/editing/hooks/use-draw";
 import { useEditingStore } from "@/features/editing/store";
 import type { GeoFeature } from "@/features/editing/types";
 import { useRoutingStore } from "@/features/routing/store";
+import { registerMapInstance } from "@/features/projects/lib/project-state";
 import { MapRefContext, useMapInstance } from "../hooks/use-map-instance";
 import { useViewport } from "../hooks/use-viewport";
 import { useMapStore } from "../store";
@@ -24,6 +26,11 @@ import { useBuildings3D } from "../hooks/use-buildings-3d";
 import { useImagerySources } from "@/features/imagery/hooks/use-imagery-sources";
 import { AnnotationPlacer } from "@/features/editing/components/annotation-placer";
 import { ImageOverlay } from "@/features/editing/components/image-overlay";
+import { useCollaborationActive } from "@/features/collaboration/hooks/use-collaboration-active";
+import { useCollaborationMapOverlay } from "@/features/collaboration/components/collaboration-map-overlay";
+import { CollaboratorBar } from "@/features/collaboration/components/collaborator-bar";
+import { useFollowMode } from "@/features/collaboration/hooks/use-follow-mode";
+import { FollowModeBanner } from "@/features/collaboration/components/follow-mode";
 
 function DrawController() {
   const activeLayerId = useLayerStore((s) => s.activeLayerId);
@@ -33,16 +40,30 @@ function DrawController() {
     ? layers.find((l) => l.id === activeLayerId && l.isVisible !== false)
     : null;
 
-  const drawLayers = activeLayer ? [activeLayer.id] : [];
-  const layerColors: Record<string, string> = {};
+  // Stabilize drawLayers so the sync effect in useDraw doesn't re-run on
+  // unrelated re-renders (e.g. draw mode changes).
+  const drawLayersRef = useRef<string[]>([]);
+  const nextDrawLayers = activeLayer ? [activeLayer.id] : [];
+  if (
+    nextDrawLayers.length !== drawLayersRef.current.length ||
+    nextDrawLayers.some((id, i) => id !== drawLayersRef.current[i])
+  ) {
+    drawLayersRef.current = nextDrawLayers;
+  }
+
+  const layerColorsRef = useRef<Record<string, string>>({});
+  const nextColors: Record<string, string> = {};
   if (activeLayer) {
     const paint = ((activeLayer.style ?? {}) as Record<string, unknown>).paint as
       | Record<string, unknown>
       | undefined;
-    layerColors[activeLayer.id] = (paint?.["fill-color"] as string) ?? "#3bb2d0";
+    nextColors[activeLayer.id] = (paint?.["fill-color"] as string) ?? "#3bb2d0";
+  }
+  if (JSON.stringify(nextColors) !== JSON.stringify(layerColorsRef.current)) {
+    layerColorsRef.current = nextColors;
   }
 
-  useDraw(drawLayers, layerColors);
+  useDraw(drawLayersRef.current, layerColorsRef.current);
   return null;
 }
 
@@ -58,6 +79,62 @@ function TerrainAndBuildings() {
 
 function ImageryLayerController() {
   useImagerySources();
+  return null;
+}
+
+function CollaborationController({
+  onCursorLayers,
+}: {
+  onCursorLayers: (layers: import("@deck.gl/core").Layer[]) => void;
+}) {
+  const { cursorLayers, onMapMouseMove, onMapMouseLeave } =
+    useCollaborationMapOverlay();
+  const { followingConnectionId, setFollowingConnectionId } = useFollowMode();
+
+  useEffect(() => {
+    onCursorLayers(cursorLayers);
+  }, [cursorLayers, onCursorLayers]);
+
+  return (
+    <>
+      <CollaboratorBar
+        onFollowUser={setFollowingConnectionId}
+        followingConnectionId={followingConnectionId}
+      />
+      <FollowModeBanner
+        followingConnectionId={followingConnectionId}
+        onStop={() => setFollowingConnectionId(null)}
+      />
+      <MapCursorTracker
+        onMouseMove={onMapMouseMove}
+        onMouseLeave={onMapMouseLeave}
+      />
+    </>
+  );
+}
+
+function MapCursorTracker({
+  onMouseMove,
+  onMouseLeave,
+}: {
+  onMouseMove: (e: { lngLat: { lng: number; lat: number } }) => void;
+  onMouseLeave: () => void;
+}) {
+  const map = useMapInstance();
+
+  useEffect(() => {
+    if (!map) return;
+    const handler = (e: maplibregl.MapMouseEvent) => {
+      onMouseMove({ lngLat: { lng: e.lngLat.lng, lat: e.lngLat.lat } });
+    };
+    map.on("mousemove", handler);
+    map.on("mouseout", onMouseLeave);
+    return () => {
+      map.off("mousemove", handler);
+      map.off("mouseout", onMouseLeave);
+    };
+  }, [map, onMouseMove, onMouseLeave]);
+
   return null;
 }
 
@@ -102,12 +179,28 @@ export function MapContainer({ deckLayers = [] }: MapContainerProps) {
   const pendingPick = useRoutingStore((s) => s.pendingPick);
   const resolvePick = useRoutingStore((s) => s.resolvePick);
   const layers = useLayerStore((s) => s.layers);
-  const visibleLayerIds = useMemo(
-    () => layers.filter((l) => l.isVisible !== false).map((l) => l.id),
-    [layers],
-  );
+  const visibleLayerIds = layers.filter((l) => l.isVisible !== false).map((l) => l.id);
+  const isCollabActive = useCollaborationActive();
+  const [collabLayers, setCollabLayers] = useState<import("@deck.gl/core").Layer[]>([]);
 
   useLayerSources();
+
+  useEffect(() => {
+    const map = mapRef.current?.getMap();
+    if (map) {
+      registerMapInstance(map);
+    } else {
+      const id = setInterval(() => {
+        const m = mapRef.current?.getMap();
+        if (m) {
+          registerMapInstance(m);
+          clearInterval(id);
+        }
+      }, 200);
+      return () => clearInterval(id);
+    }
+    return () => registerMapInstance(null);
+  }, []);
 
   const isDrawing =
     drawMode != null && drawMode !== "simple_select";
@@ -164,7 +257,7 @@ export function MapContainer({ deckLayers = [] }: MapContainerProps) {
           style={{ width: "100%", height: "100%" }}
         >
           <MapControls />
-          <DeckOverlay layers={deckLayers} />
+          <DeckOverlay layers={[...deckLayers, ...collabLayers]} />
           <DrawController />
           <TerrainAndBuildings />
           <ImageryLayerController />
@@ -172,6 +265,9 @@ export function MapContainer({ deckLayers = [] }: MapContainerProps) {
           <ImageOverlay layers={visibleLayerIds} />
           <FlyToHandler />
         </Map>
+        {isCollabActive && (
+          <CollaborationController onCursorLayers={setCollabLayers} />
+        )}
         <TerrainControl />
         <BasemapSwitcher />
       </div>

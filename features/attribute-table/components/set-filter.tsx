@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import type { CustomFilterProps } from "ag-grid-react";
 import { useGridFilter } from "ag-grid-react";
 
@@ -33,10 +33,7 @@ export function SetFilter({
     setUniqueValues(Array.from(values).sort((a, b) => a.localeCompare(b)));
   }, [api, column]);
 
-  const selected = useMemo(
-    () => new Set(model ?? uniqueValues),
-    [model, uniqueValues],
-  );
+  const selected = new Set(model ?? uniqueValues);
 
   const allSelected = model === null || selected.size === uniqueValues.length;
 

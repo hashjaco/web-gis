@@ -15,6 +15,55 @@
       "when": 1775179847906,
       "tag": "0001_rainy_bromley",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1775180000000,
+      "tag": "0002_add_projects",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1775280000000,
+      "tag": "0003_add_user_profiles",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1775380000000,
+      "tag": "0004_add_project_id",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1775480000000,
+      "tag": "0005_add_audit_log",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1775580000000,
+      "tag": "0006_add_org_id",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1775680000000,
+      "tag": "0007_rename_standard_to_free",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1775780000000,
+      "tag": "0008_add_user_add_ons",
+      "breakpoints": true
     }
   ]
 }

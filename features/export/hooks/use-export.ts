@@ -1,9 +1,11 @@
 "use client";
 
 import { useMapInstance } from "@/features/map/hooks/use-map-instance";
+import { useProjectStore } from "@/features/projects/store";
 
 export function useExport() {
   const map = useMapInstance();
+  const projectId = useProjectStore((s) => s.activeProject?.id);
 
   function exportPng() {
     if (!map) return;
@@ -16,7 +18,9 @@ export function useExport() {
   }
 
   async function exportGeoJson(layer?: string) {
+    if (!projectId) return;
     const params = new URLSearchParams();
+    params.set("projectId", projectId);
     if (layer) params.set("layer", layer);
     const res = await fetch(`/api/features?${params}`);
     const data = await res.json();
@@ -32,7 +36,9 @@ export function useExport() {
   }
 
   async function exportCsv(layer?: string) {
+    if (!projectId) return;
     const params = new URLSearchParams();
+    params.set("projectId", projectId);
     if (layer) params.set("layer", layer);
     const res = await fetch(`/api/features?${params}`);
     const data = await res.json();

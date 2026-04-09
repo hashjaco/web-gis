@@ -1,8 +1,18 @@
+import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
+import { getUserPlan } from "@/lib/auth/get-user-plan";
+import { checkRateLimit, planToRateTier } from "@/lib/rate-limit";
 
 const OSRM_URL = process.env.OSRM_URL || "http://localhost:5050";
 
 export async function GET(request: Request) {
+  const { userId } = await auth();
+  const identifier = userId ?? request.headers.get("x-forwarded-for") ?? "anon";
+  const { plan } = await getUserPlan();
+
+  const rateLimited = await checkRateLimit(identifier, planToRateTier(plan));
+  if (rateLimited) return rateLimited;
+
   const { searchParams } = new URL(request.url);
   const start = searchParams.get("start");
   const end = searchParams.get("end");
@@ -29,12 +39,10 @@ export async function GET(request: Request) {
     const res = await fetch(url);
 
     if (!res.ok) {
-      const body = await res.text().catch(() => "");
       const detail =
         res.status === 403
-          ? "Routing engine denied the request — verify OSRM_URL is reachable and allows server-side access"
-          : `Routing engine returned ${res.status}`;
-      console.error(`OSRM ${res.status}: ${body.slice(0, 200)}`);
+          ? "Routing engine denied the request"
+          : "Routing engine unavailable";
       return NextResponse.json({ error: detail }, { status: 502 });
     }
 

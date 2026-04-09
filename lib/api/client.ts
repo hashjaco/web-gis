@@ -29,11 +29,29 @@ export async function apiFetch<T>(
       ...headers,
     },
     body: body ? JSON.stringify(body) : undefined,
+    redirect: "manual",
   });
 
+  if (res.status >= 300 && res.status < 400) {
+    throw new ApiError(res.status, "Authentication required. Please sign in.");
+  }
+
   if (!res.ok) {
-    const text = await res.text().catch(() => "Unknown error");
-    throw new ApiError(res.status, text);
+    let message = "Request failed";
+    try {
+      const body = await res.json();
+      if (body?.error && typeof body.error === "string") {
+        message = body.error;
+      }
+    } catch {
+      // Body is not JSON — use generic message
+    }
+    throw new ApiError(res.status, message);
+  }
+
+  const contentType = res.headers.get("content-type") ?? "";
+  if (!contentType.includes("application/json")) {
+    throw new ApiError(res.status, "Unexpected response from server");
   }
 
   return res.json();

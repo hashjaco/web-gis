@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useCallback, useRef } from "react";
+import { useEffect, useRef } from "react";
 import { useMapStore } from "@/features/map/store";
 import { useLayerStore } from "@/features/layers/store";
 
@@ -49,7 +49,7 @@ export function useUrlState() {
     }
   }, [setViewState, setActiveBasemap]);
 
-  const generateShareUrl = useCallback(() => {
+  const generateShareUrl = () => {
     const vs = useMapStore.getState().viewState;
     const basemap = useMapStore.getState().activeBasemap;
     const layers = useLayerStore.getState().layers;
@@ -70,13 +70,13 @@ export function useUrlState() {
 
     const url = `${window.location.origin}${window.location.pathname}?${params.toString()}`;
     return url;
-  }, []);
+  };
 
-  const copyShareLink = useCallback(async () => {
+  const copyShareLink = async () => {
     const url = generateShareUrl();
     await navigator.clipboard.writeText(url);
     return url;
-  }, [generateShareUrl]);
+  };
 
   return { generateShareUrl, copyShareLink };
 }

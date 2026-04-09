@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState } from "react";
 
 export interface ImageryResult {
   id: string;
@@ -37,7 +37,7 @@ export function useImagerySearch() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const search = useCallback(async (params: SearchParams) => {
+  const search = async (params: SearchParams) => {
     setLoading(true);
     setError(null);
     try {
@@ -90,7 +90,7 @@ export function useImagerySearch() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  };
 
   return { results, loading, error, search };
 }

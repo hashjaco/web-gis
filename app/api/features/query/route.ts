@@ -1,17 +1,23 @@
+import { auth } from "@clerk/nextjs/server";
 import { sql } from "drizzle-orm";
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
+import { authorizeProject } from "@/lib/auth/authorize-project";
+import { parseBody } from "@/lib/validation/parse";
+import { spatialQuerySchema } from "@/lib/validation/schemas";
 
 export async function POST(request: Request) {
-  const body = await request.json();
-  const { geometry, layer, operation = "intersects" } = body;
+  const { userId } = await auth();
+  if (!userId)
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  if (!geometry) {
-    return NextResponse.json(
-      { error: "geometry is required" },
-      { status: 400 },
-    );
-  }
+  const parsed = await parseBody(request, spatialQuerySchema);
+  if (parsed.error) return parsed.error;
+  const { geometry, layer, operation, projectId } = parsed.data;
+
+  const project = await authorizeProject(userId, projectId, "read");
+  if (!project)
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   const geomJson = JSON.stringify(geometry);
   let spatialClause: ReturnType<typeof sql> | undefined;
@@ -37,7 +43,7 @@ export async function POST(request: Request) {
       f.created_at,
       f.updated_at
     FROM features f
-    WHERE ${spatialClause}
+    WHERE ${spatialClause} AND f.project_id = ${projectId}
   `;
 
   if (layer) {

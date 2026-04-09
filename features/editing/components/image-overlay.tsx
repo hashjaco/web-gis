@@ -6,7 +6,11 @@ import maplibregl from "maplibre-gl";
 import { useMapInstance } from "@/features/map/hooks/use-map-instance";
 import { apiFetch } from "@/lib/api/client";
 import { queryKeys } from "@/lib/query/keys";
+import { useProjectStore } from "@/features/projects/store";
 import { useEditingStore } from "../store";
+import { useUserPlan } from "@/lib/auth/use-user-plan";
+import { getGuestFeatures, updateGuestFeature } from "@/lib/guest/guest-db";
+import { useLayerStore } from "@/features/layers/store";
 
 interface ImageFeature {
   id: string;
@@ -59,14 +63,39 @@ export function ImageOverlay({ layers }: ImageOverlayProps) {
   const featuresRef = useRef(new Map<string, ImageFeature>());
   const queryClient = useQueryClient();
   const selectedFeatures = useEditingStore((s) => s.selectedFeatures);
+  const projectId = useProjectStore((s) => s.activeProject?.id);
+  const { isGuest } = useUserPlan();
+  const useLocal = isGuest || !projectId;
 
   const layerQueries = useQueries({
-    queries: layers.map((layerId) => ({
-      queryKey: queryKeys.features.list({ layer: layerId }),
-      queryFn: () =>
-        apiFetch<GeoJSON.FeatureCollection>(`/api/features?layer=${layerId}`),
-      enabled: layers.length > 0,
-    })),
+    queries: layers.map((layerId) => {
+      if (useLocal) {
+        return {
+          queryKey: ["guest-features", layerId],
+          queryFn: async (): Promise<GeoJSON.FeatureCollection> => {
+            const records = await getGuestFeatures(layerId);
+            return {
+              type: "FeatureCollection",
+              features: records.map((r) => ({
+                type: "Feature" as const,
+                id: r.id,
+                geometry: r.geometry,
+                properties: { ...r.properties, _id: r.id, _layer: r.layer },
+              })),
+            };
+          },
+          enabled: layers.length > 0,
+        };
+      }
+      const qp = new URLSearchParams({ layer: layerId });
+      if (projectId) qp.set("projectId", projectId);
+      return {
+        queryKey: queryKeys.features.list({ projectId, layer: layerId }),
+        queryFn: () =>
+          apiFetch<GeoJSON.FeatureCollection>(`/api/features?${qp}`),
+        enabled: layers.length > 0 && !!projectId,
+      };
+    }),
   });
 
   const imageFeatures = layerQueries.flatMap((q) =>
@@ -159,7 +188,7 @@ export function ImageOverlay({ layers }: ImageOverlayProps) {
         if (!el.querySelector(".resize-handle")) {
           const feat = featuresRef.current.get(id);
           if (feat) {
-            attachResizeHandles(el, feat, map, queryClient);
+            attachResizeHandles(el, feat, map, queryClient, useLocal);
           }
         }
       } else {
@@ -197,6 +226,7 @@ function attachResizeHandles(
   feat: ImageFeature,
   map: maplibregl.Map,
   queryClient: ReturnType<typeof import("@tanstack/react-query").useQueryClient>,
+  isLocal: boolean,
 ) {
   for (const corner of CORNERS) {
     const handle = document.createElement("div");
@@ -252,18 +282,24 @@ function attachResizeHandles(
       const newWidth = Number.parseInt(img.style.width);
       const newHeight = Number.parseInt(img.style.height);
 
+      const updatedProps = {
+        ...feat.properties,
+        image_width: newWidth,
+        image_height: newHeight,
+      };
+
       try {
-        await apiFetch(`/api/features/${feat.id}`, {
-          method: "PUT",
-          body: {
-            properties: {
-              ...feat.properties,
-              image_width: newWidth,
-              image_height: newHeight,
-            },
-          },
-        });
-        queryClient.invalidateQueries({ queryKey: queryKeys.features.all });
+        if (isLocal) {
+          await updateGuestFeature(feat.id, { properties: updatedProps });
+          queryClient.invalidateQueries({ queryKey: ["guest-features"] });
+          useLayerStore.getState().bumpSourceRevision();
+        } else {
+          await apiFetch(`/api/features/${feat.id}`, {
+            method: "PUT",
+            body: { properties: updatedProps },
+          });
+          queryClient.invalidateQueries({ queryKey: queryKeys.features.all });
+        }
       } catch {
         // Query refetch will reset on next render
       }

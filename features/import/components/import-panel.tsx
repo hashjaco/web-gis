@@ -11,6 +11,7 @@ export function ImportPanel() {
       importing={importing}
       error={error}
       progress={progress}
+      disabled={false}
       onImport={importFile}
     />
   );

@@ -1,0 +1,126 @@
+{
+  "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "prevId": "9dc5db9a-37cc-48db-a788-165bc2cf0114",
+  "version": "7",
+  "dialect": "postgresql",
+  "tables": {
+    "public.detections": {
+      "name": "detections",
+      "schema": "",
+      "columns": {
+        "id": { "name": "id", "type": "uuid", "primaryKey": true, "notNull": true, "default": "gen_random_uuid()" },
+        "stream_id": { "name": "stream_id", "type": "uuid", "primaryKey": false, "notNull": true },
+        "object_class": { "name": "object_class", "type": "text", "primaryKey": false, "notNull": true },
+        "confidence": { "name": "confidence", "type": "numeric", "primaryKey": false, "notNull": true },
+        "bounding_box": { "name": "bounding_box", "type": "jsonb", "primaryKey": false, "notNull": false },
+        "detected_at": { "name": "detected_at", "type": "timestamp", "primaryKey": false, "notNull": true, "default": "now()" },
+        "geometry": { "name": "geometry", "type": "geometry(Point,4326)", "primaryKey": false, "notNull": false },
+        "metadata": { "name": "metadata", "type": "jsonb", "primaryKey": false, "notNull": false, "default": "'{}'::jsonb" }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "detections_stream_id_media_streams_id_fk": {
+          "name": "detections_stream_id_media_streams_id_fk",
+          "tableFrom": "detections", "tableTo": "media_streams",
+          "columnsFrom": ["stream_id"], "columnsTo": ["id"],
+          "onDelete": "no action", "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {}, "uniqueConstraints": {}, "policies": {}, "checkConstraints": {}, "isRLSEnabled": false
+    },
+    "public.feature_history": {
+      "name": "feature_history",
+      "schema": "",
+      "columns": {
+        "hist_id": { "name": "hist_id", "type": "serial", "primaryKey": true, "notNull": true },
+        "feature_id": { "name": "feature_id", "type": "uuid", "primaryKey": false, "notNull": true },
+        "geom": { "name": "geom", "type": "geometry", "primaryKey": false, "notNull": true },
+        "properties": { "name": "properties", "type": "jsonb", "primaryKey": false, "notNull": false, "default": "'{}'::jsonb" },
+        "modified_at": { "name": "modified_at", "type": "timestamp", "primaryKey": false, "notNull": true, "default": "now()" },
+        "modified_by": { "name": "modified_by", "type": "text", "primaryKey": false, "notNull": false }
+      },
+      "indexes": {}, "foreignKeys": {}, "compositePrimaryKeys": {}, "uniqueConstraints": {}, "policies": {}, "checkConstraints": {}, "isRLSEnabled": false
+    },
+    "public.features": {
+      "name": "features",
+      "schema": "",
+      "columns": {
+        "id": { "name": "id", "type": "uuid", "primaryKey": true, "notNull": true, "default": "gen_random_uuid()" },
+        "geom": { "name": "geom", "type": "geometry", "primaryKey": false, "notNull": true },
+        "properties": { "name": "properties", "type": "jsonb", "primaryKey": false, "notNull": false, "default": "'{}'::jsonb" },
+        "layer": { "name": "layer", "type": "text", "primaryKey": false, "notNull": true },
+        "created_at": { "name": "created_at", "type": "timestamp", "primaryKey": false, "notNull": true, "default": "now()" },
+        "updated_at": { "name": "updated_at", "type": "timestamp", "primaryKey": false, "notNull": true, "default": "now()" }
+      },
+      "indexes": {}, "foreignKeys": {}, "compositePrimaryKeys": {}, "uniqueConstraints": {}, "policies": {}, "checkConstraints": {}, "isRLSEnabled": false
+    },
+    "public.layers": {
+      "name": "layers",
+      "schema": "",
+      "columns": {
+        "id": { "name": "id", "type": "uuid", "primaryKey": true, "notNull": true, "default": "gen_random_uuid()" },
+        "name": { "name": "name", "type": "text", "primaryKey": false, "notNull": true },
+        "description": { "name": "description", "type": "text", "primaryKey": false, "notNull": false },
+        "source_type": { "name": "source_type", "type": "text", "primaryKey": false, "notNull": true, "default": "'vector'" },
+        "style": { "name": "style", "type": "jsonb", "primaryKey": false, "notNull": false },
+        "order": { "name": "order", "type": "integer", "primaryKey": false, "notNull": true, "default": 0 },
+        "is_visible": { "name": "is_visible", "type": "boolean", "primaryKey": false, "notNull": true, "default": true },
+        "opacity": { "name": "opacity", "type": "integer", "primaryKey": false, "notNull": true, "default": 100 },
+        "created_at": { "name": "created_at", "type": "timestamp", "primaryKey": false, "notNull": true, "default": "now()" },
+        "updated_at": { "name": "updated_at", "type": "timestamp", "primaryKey": false, "notNull": true, "default": "now()" }
+      },
+      "indexes": {}, "foreignKeys": {}, "compositePrimaryKeys": {}, "uniqueConstraints": {}, "policies": {}, "checkConstraints": {}, "isRLSEnabled": false
+    },
+    "public.media_streams": {
+      "name": "media_streams",
+      "schema": "",
+      "columns": {
+        "id": { "name": "id", "type": "uuid", "primaryKey": true, "notNull": true, "default": "gen_random_uuid()" },
+        "name": { "name": "name", "type": "text", "primaryKey": false, "notNull": true },
+        "url": { "name": "url", "type": "text", "primaryKey": false, "notNull": true },
+        "type": { "name": "type", "type": "text", "primaryKey": false, "notNull": true, "default": "'hls'" },
+        "is_active": { "name": "is_active", "type": "boolean", "primaryKey": false, "notNull": true, "default": true },
+        "map_position": { "name": "map_position", "type": "geometry(Point,4326)", "primaryKey": false, "notNull": false },
+        "created_at": { "name": "created_at", "type": "timestamp", "primaryKey": false, "notNull": true, "default": "now()" },
+        "updated_at": { "name": "updated_at", "type": "timestamp", "primaryKey": false, "notNull": true, "default": "now()" },
+        "created_by": { "name": "created_by", "type": "text", "primaryKey": false, "notNull": false }
+      },
+      "indexes": {}, "foreignKeys": {}, "compositePrimaryKeys": {}, "uniqueConstraints": {}, "policies": {}, "checkConstraints": {}, "isRLSEnabled": false
+    },
+    "public.projects": {
+      "name": "projects",
+      "schema": "",
+      "columns": {
+        "id": { "name": "id", "type": "uuid", "primaryKey": true, "notNull": true, "default": "gen_random_uuid()" },
+        "name": { "name": "name", "type": "text", "primaryKey": false, "notNull": true },
+        "description": { "name": "description", "type": "text", "primaryKey": false, "notNull": false },
+        "state": { "name": "state", "type": "jsonb", "primaryKey": false, "notNull": true, "default": "'{}'::jsonb" },
+        "owner_id": { "name": "owner_id", "type": "text", "primaryKey": false, "notNull": true },
+        "is_public": { "name": "is_public", "type": "boolean", "primaryKey": false, "notNull": true, "default": false },
+        "created_at": { "name": "created_at", "type": "timestamp", "primaryKey": false, "notNull": true, "default": "now()" },
+        "updated_at": { "name": "updated_at", "type": "timestamp", "primaryKey": false, "notNull": true, "default": "now()" }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {}, "uniqueConstraints": {}, "policies": {}, "checkConstraints": {}, "isRLSEnabled": false
+    },
+    "public.user_profiles": {
+      "name": "user_profiles",
+      "schema": "",
+      "columns": {
+        "id": { "name": "id", "type": "text", "primaryKey": true, "notNull": true },
+        "plan": { "name": "plan", "type": "text", "primaryKey": false, "notNull": true, "default": "'standard'" },
+        "created_at": { "name": "created_at", "type": "timestamp", "primaryKey": false, "notNull": true, "default": "now()" },
+        "updated_at": { "name": "updated_at", "type": "timestamp", "primaryKey": false, "notNull": true, "default": "now()" }
+      },
+      "indexes": {}, "foreignKeys": {}, "compositePrimaryKeys": {}, "uniqueConstraints": {}, "policies": {}, "checkConstraints": {}, "isRLSEnabled": false
+    }
+  },
+  "enums": {},
+  "schemas": {},
+  "sequences": {},
+  "roles": {},
+  "policies": {},
+  "views": {},
+  "_meta": { "columns": {}, "schemas": {}, "tables": {} }
+}

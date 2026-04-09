@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useRef } from "react";
+import { useState, useRef } from "react";
 
 export interface SpectralResult {
   canvas: HTMLCanvasElement;
@@ -24,8 +24,7 @@ export function useSpectralAnalysis() {
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<SpectralResult | null>(null);
 
-  const computeIndex = useCallback(
-    async (
+  const computeIndex = async (
       cogUrl: string,
       index: BandIndex,
       customFormula?: string,
@@ -114,12 +113,9 @@ export function useSpectralAnalysis() {
       } finally {
         setLoading(false);
       }
-    },
-    [],
-  );
+  };
 
-  const inspectPixel = useCallback(
-    async (cogUrl: string, x: number, y: number) => {
+  const inspectPixel = async (cogUrl: string, x: number, y: number) => {
       try {
         const { fromUrl } = await import("geotiff");
         const tiff = await fromUrl(cogUrl);
@@ -131,16 +127,14 @@ export function useSpectralAnalysis() {
           Number((rasters[i] as Float32Array | Uint16Array)[0]),
         );
       } catch {
-        return null;
-      }
-    },
-    [],
-  );
+      return null;
+    }
+  };
 
-  const clear = useCallback(() => {
+  const clear = () => {
     setResult(null);
     setError(null);
-  }, []);
+  };
 
   return { loading, error, result, computeIndex, inspectPixel, clear };
 }

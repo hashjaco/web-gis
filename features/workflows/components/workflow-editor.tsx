@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   ReactFlow,
   addEdge,
@@ -21,6 +21,7 @@ import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import * as turf from "@turf/turf";
 import { apiFetch } from "@/lib/api/client";
+import { useProjectStore } from "@/features/projects/store";
 import type { GeoNodeData, GeoNodeType } from "../types";
 import type { FeatureCollection } from "geojson";
 
@@ -138,14 +139,17 @@ async function executeNode(
   nodeType: GeoNodeType,
   input: FeatureCollection | null,
   params: Record<string, unknown>,
+  projectId?: string,
 ): Promise<FeatureCollection | null> {
   if (!input && !nodeType.includes("input")) return null;
 
   switch (nodeType) {
     case "layer-input": {
       const layerId = params.layerId as string;
-      if (!layerId) return null;
-      return apiFetch<FeatureCollection>(`/api/features?layer=${layerId}`);
+      if (!layerId || !projectId) return null;
+      const qp = new URLSearchParams({ layer: layerId });
+      qp.set("projectId", projectId);
+      return apiFetch<FeatureCollection>(`/api/features?${qp}`);
     }
     case "buffer": {
       if (!input) return null;
@@ -220,6 +224,7 @@ export function WorkflowEditor({ onClose, initialNodeType }: WorkflowEditorProps
   const [showCatalog, setShowCatalog] = useState(true);
   const [running, setRunning] = useState(false);
   const [executionLog, setExecutionLog] = useState<string[]>([]);
+  const projectId = useProjectStore((s) => s.activeProject?.id);
 
   useEffect(() => {
     if (initialNodeType) {
@@ -233,25 +238,20 @@ export function WorkflowEditor({ onClose, initialNodeType }: WorkflowEditorProps
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const onConnect = useCallback(
-    (connection: Connection) => setEdges((eds) => addEdge(connection, eds)),
-    [setEdges],
-  );
+  const onConnect = (connection: Connection) =>
+    setEdges((eds) => addEdge(connection, eds));
 
-  const addNode = useCallback(
-    (nodeType: GeoNodeType, label: string) => {
-      const newNode: Node = {
-        id: `node-${Date.now()}`,
-        type: "geoNode",
-        position: { x: 250 + nodes.length * 50, y: 100 + nodes.length * 80 },
-        data: { label, nodeType, params: {} } satisfies GeoNodeData,
-      };
-      setNodes((nds) => [...nds, newNode]);
-    },
-    [nodes.length, setNodes],
-  );
+  const addNode = (nodeType: GeoNodeType, label: string) => {
+    const newNode: Node = {
+      id: `node-${Date.now()}`,
+      type: "geoNode",
+      position: { x: 250 + nodes.length * 50, y: 100 + nodes.length * 80 },
+      data: { label, nodeType, params: {} } satisfies GeoNodeData,
+    };
+    setNodes((nds) => [...nds, newNode]);
+  };
 
-  const saveWorkflow = useCallback(() => {
+  const saveWorkflow = () => {
     const workflow = {
       id: `wf-${Date.now()}`,
       name: `Workflow ${new Date().toLocaleDateString()}`,
@@ -277,9 +277,9 @@ export function WorkflowEditor({ onClose, initialNodeType }: WorkflowEditorProps
     } catch (err) {
       setExecutionLog((prev) => [...prev, `Save failed: ${err}`]);
     }
-  }, [nodes, edges]);
+  };
 
-  const executeWorkflow = useCallback(async () => {
+  const executeWorkflow = async () => {
     setRunning(true);
     setExecutionLog([]);
     try {
@@ -296,7 +296,7 @@ export function WorkflowEditor({ onClose, initialNodeType }: WorkflowEditorProps
           input = results.get(incoming[0].source) ?? null;
         }
 
-        const result = await executeNode(data.nodeType, input, data.params);
+        const result = await executeNode(data.nodeType, input, data.params, projectId);
         results.set(node.id, result);
 
         const count = result?.features?.length ?? 0;
@@ -315,7 +315,7 @@ export function WorkflowEditor({ onClose, initialNodeType }: WorkflowEditorProps
     } finally {
       setRunning(false);
     }
-  }, [nodes, edges]);
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex bg-background">

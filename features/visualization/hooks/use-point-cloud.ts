@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useMemo } from "react";
+import { useState } from "react";
 import type { Layer } from "@deck.gl/core";
 import { PointCloudLayer } from "@deck.gl/layers";
 
@@ -21,7 +21,7 @@ export function usePointCloud() {
   const [error, setError] = useState<string | null>(null);
   const [pointSize, setPointSize] = useState(2);
 
-  const loadFile = useCallback(async (file: File) => {
+  const loadFile = async (file: File) => {
     setLoading(true);
     setError(null);
     try {
@@ -70,9 +70,9 @@ export function usePointCloud() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  };
 
-  const layer: Layer | null = useMemo(() => {
+  const layer: Layer | null = (() => {
     if (!data) return null;
 
     const pointData = Array.from({ length: data.count }, (_, i) => ({
@@ -98,12 +98,12 @@ export function usePointCloud() {
       coordinateSystem: 2,
       pickable: true,
     });
-  }, [data, pointSize]);
+  })();
 
-  const clear = useCallback(() => {
+  const clear = () => {
     setData(null);
     setError(null);
-  }, []);
+  };
 
   return {
     data,

@@ -1,8 +1,7 @@
-import { readFile, stat } from "node:fs/promises";
-import { join, extname } from "node:path";
+import { auth } from "@clerk/nextjs/server";
+import { extname } from "node:path";
 import { NextResponse } from "next/server";
-
-const UPLOAD_DIR = join(process.cwd(), "uploads");
+import { getFileBuffer } from "@/lib/storage";
 
 const MIME_TYPES: Record<string, string> = {
   ".jpg": "image/jpeg",
@@ -10,33 +9,32 @@ const MIME_TYPES: Record<string, string> = {
   ".png": "image/png",
   ".gif": "image/gif",
   ".webp": "image/webp",
-  ".svg": "image/svg+xml",
 };
 
 export async function GET(
   _request: Request,
   { params }: { params: Promise<{ path: string[] }> },
 ) {
+  const { userId } = await auth();
+  if (!userId)
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
   const { path } = await params;
-  const filePath = join(UPLOAD_DIR, ...path);
+  const key = path.join("/");
 
-  if (!filePath.startsWith(UPLOAD_DIR)) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  }
-
-  try {
-    await stat(filePath);
-  } catch {
+  const buffer = await getFileBuffer(key);
+  if (!buffer) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
-  const buffer = await readFile(filePath);
-  const ext = extname(filePath).toLowerCase();
+  const ext = extname(key).toLowerCase();
   const contentType = MIME_TYPES[ext] ?? "application/octet-stream";
 
-  return new NextResponse(buffer, {
+  return new NextResponse(new Uint8Array(buffer), {
     headers: {
       "Content-Type": contentType,
+      "Content-Disposition": "attachment",
+      "X-Content-Type-Options": "nosniff",
       "Cache-Control": "public, max-age=31536000, immutable",
     },
   });

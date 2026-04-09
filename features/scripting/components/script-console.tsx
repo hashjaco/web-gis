@@ -1,10 +1,11 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useState } from "react";
 import Editor from "@monaco-editor/react";
 import { Play, Trash2, Terminal } from "lucide-react";
 import * as turf from "@turf/turf";
 import { apiFetch } from "@/lib/api/client";
+import { useProjectStore } from "@/features/projects/store";
 
 const DEFAULT_SCRIPT = `// ShimGIS Scripting Console
 // Available APIs:
@@ -27,45 +28,52 @@ for (const f of features.features) {
 }
 `;
 
-const gisApi = {
-  fetchFeatures: (layer: string) =>
-    apiFetch(`/api/features?layer=${encodeURIComponent(layer)}`),
-  buffer: (geojson: any, distance: number, units = "kilometers") =>
-    turf.buffer(geojson, distance, { units: units as any }),
-  area: (feature: any) => turf.area(feature),
-  length: (feature: any) => turf.length(feature),
-  centroid: (feature: any) => turf.centroid(feature),
-  union: (features: any[]) => {
-    if (features.length === 0) return null;
-    let result = features[0];
-    for (let i = 1; i < features.length; i++) {
-      const merged = turf.union(turf.featureCollection([result, features[i]]));
-      if (!merged) return null;
-      result = merged;
-    }
-    return result;
-  },
-  bbox: (geojson: any) => turf.bbox(geojson),
-  dissolve: (fc: any, prop?: string) =>
-    turf.dissolve(fc, { propertyName: prop }),
-  simplify: (geojson: any, tolerance: number) =>
-    turf.simplify(geojson, { tolerance }),
-  log: null as ((msg: string) => void) | null,
-};
+function buildGisApi(projectId?: string) {
+  return {
+    fetchFeatures: (layer: string) => {
+      if (!projectId) return Promise.reject(new Error("No active project"));
+      const qp = new URLSearchParams({ layer });
+      qp.set("projectId", projectId);
+      return apiFetch(`/api/features?${qp}`);
+    },
+    buffer: (geojson: any, distance: number, units = "kilometers") =>
+      turf.buffer(geojson, distance, { units: units as any }),
+    area: (feature: any) => turf.area(feature),
+    length: (feature: any) => turf.length(feature),
+    centroid: (feature: any) => turf.centroid(feature),
+    union: (features: any[]) => {
+      if (features.length === 0) return null;
+      let result = features[0];
+      for (let i = 1; i < features.length; i++) {
+        const merged = turf.union(turf.featureCollection([result, features[i]]));
+        if (!merged) return null;
+        result = merged;
+      }
+      return result;
+    },
+    bbox: (geojson: any) => turf.bbox(geojson),
+    dissolve: (fc: any, prop?: string) =>
+      turf.dissolve(fc, { propertyName: prop }),
+    simplify: (geojson: any, tolerance: number) =>
+      turf.simplify(geojson, { tolerance }),
+    log: null as ((msg: string) => void) | null,
+  };
+}
 
 export function ScriptConsole({ onClose }: { onClose?: () => void }) {
   const [script, setScript] = useState(DEFAULT_SCRIPT);
   const [output, setOutput] = useState<string[]>([]);
   const [running, setRunning] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const projectId = useProjectStore((s) => s.activeProject?.id);
 
-  const runScript = useCallback(async () => {
+  const runScript = async () => {
     setRunning(true);
     setError(null);
     const logs: string[] = [];
 
     const gis = {
-      ...gisApi,
+      ...buildGisApi(projectId),
       log: (msg: unknown) => logs.push(String(msg)),
     };
 
@@ -82,7 +90,7 @@ export function ScriptConsole({ onClose }: { onClose?: () => void }) {
     } finally {
       setRunning(false);
     }
-  }, [script]);
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex flex-col bg-background">

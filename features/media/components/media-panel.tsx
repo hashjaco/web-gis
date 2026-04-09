@@ -12,7 +12,7 @@ import {
   Trash2,
   Video,
 } from "lucide-react";
-import { useCallback, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useMapStore } from "@/features/map/store";
@@ -232,7 +232,7 @@ function ObjectDetectionSection() {
   const [lastResults, setLastResults] = useState<Detection[]>([]);
   const canvasPreviewRef = useRef<HTMLCanvasElement>(null);
 
-  const handleDetect = useCallback(async () => {
+  const handleDetect = async () => {
     if (overlays.length === 0) return;
     const overlay = overlays[0];
     const frame = captureFrame(overlay.id);
@@ -271,7 +271,7 @@ function ObjectDetectionSection() {
     } finally {
       setDetecting(false);
     }
-  }, [overlays, captureFrame, detect]);
+  };
 
   return (
     <div className="space-y-2">

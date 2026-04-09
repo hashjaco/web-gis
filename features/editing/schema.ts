@@ -1,5 +1,6 @@
 import {
   customType,
+  index,
   jsonb,
   pgTable,
   serial,
@@ -7,6 +8,7 @@ import {
   timestamp,
   uuid,
 } from "drizzle-orm/pg-core";
+import { projects } from "@/features/projects/schema";
 
 const geometry = customType<{
   data: string;
@@ -23,14 +25,21 @@ const geometry = customType<{
   },
 });
 
-export const features = pgTable("features", {
-  id: uuid("id").defaultRandom().primaryKey(),
-  geom: geometry("geom").notNull(),
-  properties: jsonb("properties").$type<Record<string, unknown>>().default({}),
-  layer: text("layer").notNull(),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
-});
+export const features = pgTable(
+  "features",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    geom: geometry("geom").notNull(),
+    properties: jsonb("properties").$type<Record<string, unknown>>().default({}),
+    layer: text("layer").notNull(),
+    projectId: uuid("project_id").references(() => projects.id, {
+      onDelete: "cascade",
+    }),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  },
+  (table) => [index("features_project_idx").on(table.projectId)],
+);
 
 export const featureHistory = pgTable("feature_history", {
   histId: serial("hist_id").primaryKey(),

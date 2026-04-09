@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
   BarChart, Bar, PieChart, Pie, LineChart, Line, ScatterChart, Scatter,
@@ -9,6 +9,7 @@ import {
 import { Plus, X, BarChart3 } from "lucide-react";
 import { apiFetch } from "@/lib/api/client";
 import { useLayerStore } from "@/features/layers/store";
+import { useProjectStore } from "@/features/projects/store";
 import type { FeatureCollection } from "geojson";
 
 type WidgetType = "bar" | "pie" | "line" | "scatter" | "stat";
@@ -161,15 +162,20 @@ function WidgetCard({
 }: { widget: DashboardWidget; onRemove: () => void }) {
   const layers = useLayerStore((s) => s.layers);
   const layer = layers.find((l) => l.id === widget.layerId);
+  const projectId = useProjectStore((s) => s.activeProject?.id);
 
   const { data: fc } = useQuery({
-    queryKey: ["features", "dashboard", layer?.id],
-    queryFn: () =>
-      apiFetch<FeatureCollection>(`/api/features?layer=${layer?.id ?? ""}`),
-    enabled: !!layer,
+    queryKey: ["features", "dashboard", layer?.id, projectId],
+    queryFn: () => {
+      const qp = new URLSearchParams();
+      if (layer?.id) qp.set("layer", layer.id);
+      if (projectId) qp.set("projectId", projectId);
+      return apiFetch<FeatureCollection>(`/api/features?${qp}`);
+    },
+    enabled: !!layer && !!projectId,
   });
 
-  const chartData = useMemo(() => {
+  const chartData = (() => {
     if (!fc) return [];
     const counts: Record<string, number> = {};
     for (const f of fc.features) {
@@ -180,7 +186,7 @@ function WidgetCard({
       .sort((a, b) => b[1] - a[1])
       .slice(0, 15)
       .map(([name, value]) => ({ name, value }));
-  }, [fc, widget.attribute]);
+  })();
 
   return (
     <div className="rounded border bg-card p-2">

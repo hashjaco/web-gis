@@ -1,9 +1,19 @@
+import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
+import { getUserPlan } from "@/lib/auth/get-user-plan";
+import { checkRateLimit, planToRateTier } from "@/lib/rate-limit";
 
 const NOMINATIM_URL =
   process.env.NOMINATIM_URL || "https://nominatim.openstreetmap.org";
 
 export async function GET(request: Request) {
+  const { userId } = await auth();
+  const identifier = userId ?? request.headers.get("x-forwarded-for") ?? "anon";
+  const { plan } = await getUserPlan();
+
+  const rateLimited = await checkRateLimit(identifier, planToRateTier(plan));
+  if (rateLimited) return rateLimited;
+
   const { searchParams } = new URL(request.url);
   const q = searchParams.get("q");
 

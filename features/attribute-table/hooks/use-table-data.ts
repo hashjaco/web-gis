@@ -2,9 +2,9 @@
 
 import { useQuery } from "@tanstack/react-query";
 import type { FeatureCollection } from "geojson";
-import { useMemo } from "react";
 import { apiFetch } from "@/lib/api/client";
 import { queryKeys } from "@/lib/query/keys";
+import { useProjectStore } from "@/features/projects/store";
 import type { TableFeature } from "../types";
 
 interface UseTableDataOptions {
@@ -56,27 +56,26 @@ const EMPTY_RESULT = { rows: [] as TableFeature[], columns: [] as string[] };
 
 export function useTableData({ layers }: UseTableDataOptions) {
   const hasLayers = layers && layers.length > 0;
+  const projectId = useProjectStore((s) => s.activeProject?.id);
 
   const {
     data: fc,
     isLoading,
     refetch,
   } = useQuery({
-    queryKey: queryKeys.features.list({ layers }),
+    queryKey: queryKeys.features.list({ projectId, layers }),
     queryFn: () => {
       const params = new URLSearchParams();
+      if (projectId) params.set("projectId", projectId);
       if (layers) {
         for (const id of layers) params.append("layer", id);
       }
       return apiFetch<FeatureCollection>(`/api/features?${params}`);
     },
-    enabled: hasLayers,
+    enabled: hasLayers && !!projectId,
   });
 
-  const { rows, columns } = useMemo(
-    () => (fc ? toTableFeatures(fc) : EMPTY_RESULT),
-    [fc],
-  );
+  const { rows, columns } = fc ? toTableFeatures(fc) : EMPTY_RESULT;
 
   return { data: rows, columns, loading: isLoading, refetch };
 }

@@ -1,20 +1,47 @@
-import { auth } from "@clerk/nextjs/server";
 import { sql } from "drizzle-orm";
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
+import { resolveOrg } from "@/lib/auth/resolve-org";
+import { getUserPlan } from "@/lib/auth/get-user-plan";
+import { checkQuota } from "@/lib/auth/check-quota";
+import { parseBody } from "@/lib/validation/parse";
+import { createProjectSchema } from "@/lib/validation/schemas";
 
 export async function GET(request: Request) {
-  const { userId } = await auth();
+  const { userId, orgId } = await resolveOrg();
   const { searchParams } = new URL(request.url);
   const publicOnly = searchParams.get("public") === "true";
 
-  let query;
   if (publicOnly) {
-    query = sql`SELECT * FROM projects WHERE is_public = true ORDER BY updated_at DESC`;
-  } else if (userId) {
-    query = sql`SELECT * FROM projects WHERE owner_id = ${userId} OR is_public = true ORDER BY updated_at DESC`;
+    const rows = await db.execute(
+      sql`SELECT * FROM projects WHERE is_public = true ORDER BY updated_at DESC`,
+    );
+    return NextResponse.json(rows);
+  }
+
+  if (!userId) {
+    const rows = await db.execute(
+      sql`SELECT * FROM projects WHERE is_public = true ORDER BY updated_at DESC`,
+    );
+    return NextResponse.json(rows);
+  }
+
+  let query;
+  if (orgId) {
+    query = sql`
+      SELECT * FROM projects
+      WHERE org_id = ${orgId}
+         OR (owner_id = ${userId} AND org_id IS NULL)
+         OR is_public = true
+      ORDER BY updated_at DESC
+    `;
   } else {
-    query = sql`SELECT * FROM projects WHERE is_public = true ORDER BY updated_at DESC`;
+    query = sql`
+      SELECT * FROM projects
+      WHERE (owner_id = ${userId} AND org_id IS NULL)
+         OR is_public = true
+      ORDER BY updated_at DESC
+    `;
   }
 
   const rows = await db.execute(query);
@@ -22,27 +49,26 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  const { userId } = await auth();
+  const { userId, orgId } = await resolveOrg();
   if (!userId)
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const body = await request.json();
-  const { name, description, state, isPublic } = body;
+  const { plan } = await getUserPlan();
+  const quotaError = await checkQuota(plan, "projects", { userId });
+  if (quotaError) return quotaError;
 
-  if (!name || !state) {
-    return NextResponse.json(
-      { error: "name and state are required" },
-      { status: 400 },
-    );
-  }
+  const parsed = await parseBody(request, createProjectSchema);
+  if (parsed.error) return parsed.error;
+  const { name, description, state, isPublic } = parsed.data;
 
   const rows = await db.execute(sql`
-    INSERT INTO projects (name, description, state, owner_id, is_public)
+    INSERT INTO projects (name, description, state, owner_id, org_id, is_public)
     VALUES (
       ${name},
       ${description ?? null},
       ${JSON.stringify(state)}::jsonb,
       ${userId},
+      ${orgId},
       ${isPublic ?? false}
     )
     RETURNING *

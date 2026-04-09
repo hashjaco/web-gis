@@ -79,11 +79,7 @@ export default function DashboardPage() {
             drawMode={drawMode ?? "simple_select"}
             annotationMode={annotationMode}
             onModeChange={(mode) => {
-              if (mode === "draw_text" || mode === "draw_marker") {
-                setDrawMode("draw_point");
-              } else {
-                setDrawMode(mode);
-              }
+              setDrawMode(mode);
             }}
             onAnnotation={(type) => {
               setAnnotationMode(annotationMode === type ? null : type);

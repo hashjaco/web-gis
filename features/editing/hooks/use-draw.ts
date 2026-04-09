@@ -7,12 +7,22 @@ import { useQueries, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef } from "react";
 import { useMapInstance } from "@/features/map/hooks/use-map-instance";
 import { apiFetch } from "@/lib/api/client";
+import { useUserPlan } from "@/lib/auth/use-user-plan";
+import {
+  addGuestFeature,
+  updateGuestFeature,
+  removeGuestFeature,
+  getGuestFeatures,
+  type GuestFeatureRecord,
+} from "@/lib/guest/guest-db";
 import { queryKeys } from "@/lib/query/keys";
 import { useEditingStore } from "../store";
 import { useLayerStore } from "@/features/layers/store";
+import { useProjectStore } from "@/features/projects/store";
 import DrawCircle from "../modes/draw-circle";
 import DrawRectangle from "../modes/draw-rectangle";
 import DrawFreehand from "../modes/draw-freehand";
+import DrawMarker from "../modes/draw-marker";
 
 const STROKE_COLOR_EXPR = [
   "coalesce",
@@ -145,6 +155,8 @@ const MAPLIBRE_DRAW_STYLES: Record<string, unknown>[] = [
       ["==", "meta", "feature"],
       ["!=", "mode", "static"],
       ["!has", "user_image_url"],
+      ["!has", "user_label"],
+      ["!has", "user__isMarker"],
     ],
     paint: { "circle-radius": 5, "circle-color": FILL_COLOR_EXPR },
   },
@@ -157,6 +169,8 @@ const MAPLIBRE_DRAW_STYLES: Record<string, unknown>[] = [
       ["!=", "meta", "midpoint"],
       ["==", "active", "true"],
       ["!has", "user_image_url"],
+      ["!has", "user_label"],
+      ["!has", "user__isMarker"],
     ],
     paint: { "circle-radius": 7, "circle-color": "#fbb03b" },
   },
@@ -178,14 +192,130 @@ const MAPLIBRE_DRAW_STYLES: Record<string, unknown>[] = [
     ],
     layout: {
       "text-field": ["get", "user_label"],
+      "text-font": ["Open Sans Semibold"],
       "text-size": 14,
-      "text-offset": [0, 1.5],
-      "text-anchor": "top",
+      "text-anchor": "center",
     },
     paint: {
       "text-color": STROKE_COLOR_EXPR,
       "text-halo-color": "#fff",
-      "text-halo-width": 1,
+      "text-halo-width": 1.5,
+    },
+  },
+  {
+    id: "gl-draw-label-active",
+    type: "symbol",
+    filter: [
+      "all",
+      ["==", "active", "true"],
+      ["==", "$type", "Point"],
+      ["!=", "meta", "midpoint"],
+      ["has", "user_label"],
+    ],
+    layout: {
+      "text-field": ["get", "user_label"],
+      "text-font": ["Open Sans Semibold"],
+      "text-size": 14,
+      "text-anchor": "center",
+    },
+    paint: {
+      "text-color": "#fbb03b",
+      "text-halo-color": "#fff",
+      "text-halo-width": 1.5,
+    },
+  },
+  {
+    id: "gl-draw-marker-border-inactive",
+    type: "circle",
+    filter: [
+      "all",
+      ["==", "active", "false"],
+      ["==", "$type", "Point"],
+      ["==", "meta", "feature"],
+      ["has", "user__isMarker"],
+    ],
+    paint: {
+      "circle-radius": 10,
+      "circle-color": "#fff",
+    },
+  },
+  {
+    id: "gl-draw-marker-inactive",
+    type: "circle",
+    filter: [
+      "all",
+      ["==", "active", "false"],
+      ["==", "$type", "Point"],
+      ["==", "meta", "feature"],
+      ["has", "user__isMarker"],
+    ],
+    paint: {
+      "circle-radius": 7,
+      "circle-color": FILL_COLOR_EXPR,
+    },
+  },
+  {
+    id: "gl-draw-marker-border-active",
+    type: "circle",
+    filter: [
+      "all",
+      ["==", "active", "true"],
+      ["==", "$type", "Point"],
+      ["!=", "meta", "midpoint"],
+      ["has", "user__isMarker"],
+    ],
+    paint: {
+      "circle-radius": 12,
+      "circle-color": "#fff",
+    },
+  },
+  {
+    id: "gl-draw-marker-active",
+    type: "circle",
+    filter: [
+      "all",
+      ["==", "active", "true"],
+      ["==", "$type", "Point"],
+      ["!=", "meta", "midpoint"],
+      ["has", "user__isMarker"],
+    ],
+    paint: {
+      "circle-radius": 9,
+      "circle-color": "#fbb03b",
+    },
+  },
+  {
+    id: "gl-draw-image-inactive",
+    type: "circle",
+    filter: [
+      "all",
+      ["==", "active", "false"],
+      ["==", "$type", "Point"],
+      ["==", "meta", "feature"],
+      ["has", "user_image_url"],
+    ],
+    paint: {
+      "circle-radius": 8,
+      "circle-color": "#9333ea",
+      "circle-stroke-width": 2,
+      "circle-stroke-color": "#fff",
+    },
+  },
+  {
+    id: "gl-draw-image-active",
+    type: "circle",
+    filter: [
+      "all",
+      ["==", "active", "true"],
+      ["==", "$type", "Point"],
+      ["!=", "meta", "midpoint"],
+      ["has", "user_image_url"],
+    ],
+    paint: {
+      "circle-radius": 10,
+      "circle-color": "#fbb03b",
+      "circle-stroke-width": 2,
+      "circle-stroke-color": "#fff",
     },
   },
 ];
@@ -285,14 +415,43 @@ export function useDraw(
   const layerColorsRef = useRef(layerColors);
   layerColorsRef.current = layerColors;
   const queryClient = useQueryClient();
+  const projectId = useProjectStore((s) => s.activeProject?.id);
+  const projectIdRef = useRef(projectId);
+  projectIdRef.current = projectId;
+  const { isGuest } = useUserPlan();
+  const useLocal = isGuest || !projectId;
+  const useLocalRef = useRef(useLocal);
+  useLocalRef.current = useLocal;
 
   const layerQueries = useQueries({
-    queries: selectedLayers.map((layerId) => ({
-      queryKey: queryKeys.features.list({ layer: layerId }),
-      queryFn: () =>
-        apiFetch<GeoJSON.FeatureCollection>(`/api/features?layer=${layerId}`),
-      enabled: selectedLayers.length > 0,
-    })),
+    queries: selectedLayers.map((layerId) => {
+      if (useLocal) {
+        return {
+          queryKey: ["guest-features", layerId],
+          queryFn: async (): Promise<GeoJSON.FeatureCollection> => {
+            const records = await getGuestFeatures(layerId);
+            return {
+              type: "FeatureCollection",
+              features: records.map((r) => ({
+                type: "Feature" as const,
+                id: r.id,
+                geometry: r.geometry,
+                properties: { ...r.properties, _id: r.id, _layer: r.layer },
+              })),
+            };
+          },
+          enabled: selectedLayers.length > 0,
+        };
+      }
+      const qp = new URLSearchParams({ layer: layerId });
+      if (projectId) qp.set("projectId", projectId);
+      return {
+        queryKey: queryKeys.features.list({ projectId, layer: layerId }),
+        queryFn: () =>
+          apiFetch<GeoJSON.FeatureCollection>(`/api/features?${qp}`),
+        enabled: selectedLayers.length > 0 && !!projectId,
+      };
+    }),
   });
 
   useEffect(() => {
@@ -301,12 +460,14 @@ export function useDraw(
     const draw = new MapboxDraw({
       displayControlsDefault: false,
       controls: {},
+      userProperties: true,
       styles: MAPLIBRE_DRAW_STYLES,
       modes: {
         ...MapboxDraw.modes,
         draw_circle: DrawCircle,
         draw_rectangle: DrawRectangle,
         draw_freehand: DrawFreehand,
+        draw_marker: DrawMarker,
       },
     });
 
@@ -368,25 +529,54 @@ export function useDraw(
             if (snapping.enabled && map) {
               f.geometry = feature.geometry;
             }
-            d.delete(drawId);
             d.add(f);
           }
         }, 0);
-        apiFetch<{ id: string }>("/api/features", {
-          method: "POST",
-          body: {
+        if (useLocalRef.current) {
+          const now = new Date().toISOString();
+          const record: GuestFeatureRecord = {
+            id: crypto.randomUUID(),
             geometry: feature.geometry,
             properties: (feature.properties ?? {}) as Record<string, unknown>,
             layer: targetLayer,
-          },
-        })
-          .then((created) => {
-            if (drawId && created?.id) {
-              idMapRef.current.set(drawId, created.id);
-            }
-            invalidateFeatures();
+            createdAt: now,
+            updatedAt: now,
+          };
+          addGuestFeature(record)
+            .then(() => {
+              if (drawId) idMapRef.current.set(drawId, record.id);
+              useLayerStore.getState().bumpSourceRevision();
+              invalidateFeatures();
+            })
+            .catch(() => {});
+        } else {
+          apiFetch<{ id: string }>("/api/features", {
+            method: "POST",
+            body: {
+              geometry: feature.geometry,
+              properties: (feature.properties ?? {}) as Record<string, unknown>,
+              layer: targetLayer,
+              projectId: projectIdRef.current,
+            },
           })
-          .catch(() => {});
+            .then((created) => {
+              if (drawId && created?.id) {
+                idMapRef.current.set(drawId, created.id);
+              }
+              invalidateFeatures();
+            })
+            .catch(() => {});
+        }
+      }
+
+      const currentMode = useEditingStore.getState().drawMode;
+      if (
+        currentMode === "draw_circle" ||
+        currentMode === "draw_rectangle" ||
+        currentMode === "draw_freehand" ||
+        currentMode === "draw_marker"
+      ) {
+        useEditingStore.getState().setDrawMode(null);
       }
     };
 
@@ -414,7 +604,6 @@ export function useDraw(
             const f = d.get(String(feature.id));
             if (f) {
               f.geometry = feature.geometry;
-              d.delete(String(feature.id));
               d.add(f);
             }
           }, 0);
@@ -422,12 +611,21 @@ export function useDraw(
 
         const dbId = feature.id ? resolveDbId(String(feature.id)) : null;
         if (dbId) {
-          apiFetch(`/api/features/${dbId}`, {
-            method: "PUT",
-            body: { geometry: feature.geometry },
-          })
-            .then(() => invalidateFeatures())
-            .catch(() => {});
+          if (useLocalRef.current) {
+            updateGuestFeature(dbId, { geometry: feature.geometry })
+              .then(() => {
+                useLayerStore.getState().bumpSourceRevision();
+                invalidateFeatures();
+              })
+              .catch(() => {});
+          } else {
+            apiFetch(`/api/features/${dbId}`, {
+              method: "PUT",
+              body: { geometry: feature.geometry },
+            })
+              .then(() => invalidateFeatures())
+              .catch(() => {});
+          }
         }
       }
     };
@@ -437,9 +635,18 @@ export function useDraw(
         const drawId = String(feature.id ?? "");
         const dbId = drawId ? resolveDbId(drawId) : null;
         if (dbId) {
-          apiFetch(`/api/features/${dbId}`, { method: "DELETE" })
-            .then(() => invalidateFeatures())
-            .catch(() => {});
+          if (useLocalRef.current) {
+            removeGuestFeature(dbId)
+              .then(() => {
+                useLayerStore.getState().bumpSourceRevision();
+                invalidateFeatures();
+              })
+              .catch(() => {});
+          } else {
+            apiFetch(`/api/features/${dbId}`, { method: "DELETE" })
+              .then(() => invalidateFeatures())
+              .catch(() => {});
+          }
           idMapRef.current.delete(drawId);
         }
       }
@@ -485,7 +692,18 @@ export function useDraw(
   }, [map, queryClient]);
 
   const allReady = layerQueries.every((q) => q.isSuccess);
-  const queriesData = layerQueries.map((q) => q.data);
+  const queriesDataRaw = layerQueries.map((q) => q.data);
+
+  // Stabilize queriesData so the sync effect only fires when query results
+  // actually change, not on every render triggered by draw mode switches.
+  const queriesDataRef = useRef(queriesDataRaw);
+  if (
+    queriesDataRaw.length !== queriesDataRef.current.length ||
+    queriesDataRaw.some((d, i) => d !== queriesDataRef.current[i])
+  ) {
+    queriesDataRef.current = queriesDataRaw;
+  }
+  const queriesData = queriesDataRef.current;
 
   useEffect(() => {
     const draw = drawRef.current;

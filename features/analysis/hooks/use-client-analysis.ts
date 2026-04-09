@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState } from "react";
 import { apiFetch } from "@/lib/api/client";
+import { useProjectStore } from "@/features/projects/store";
 import type { FeatureCollection, Point, Polygon, MultiPolygon } from "geojson";
 import type {
   AnalysisResult,
@@ -25,14 +26,20 @@ export function useClientAnalysis() {
   const [statistics, setStatistics] = useState<StatisticsResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const projectId = useProjectStore((s) => s.activeProject?.id);
 
-  const run = useCallback(async (params: ClientAnalysisParams) => {
+  const run = async (params: ClientAnalysisParams) => {
     setLoading(true);
     setError(null);
     setStatistics(null);
     try {
+      if (!projectId) {
+        throw new Error("No active project");
+      }
+      const qp = new URLSearchParams({ layer: params.layerId });
+      qp.set("projectId", projectId);
       const fc = await apiFetch<FeatureCollection>(
-        `/api/features?layer=${params.layerId}`,
+        `/api/features?${qp}`,
       );
 
       if (!fc.features.length) {
@@ -104,13 +111,13 @@ export function useClientAnalysis() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  };
 
-  const clearResult = useCallback(() => {
+  const clearResult = () => {
     setResult(null);
     setStatistics(null);
     setError(null);
-  }, []);
+  };
 
   return { result, statistics, loading, error, run, clearResult };
 }

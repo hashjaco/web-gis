@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useRef } from "react";
+import { useState, useRef } from "react";
 import { getModelById, type ModelConfig } from "../models";
 
 export interface ClassificationResult {
@@ -71,7 +71,7 @@ export function useImageClassifier() {
   const labelsRef = useRef<string[]>([]);
   const configRef = useRef<ModelConfig | null>(null);
 
-  const loadModel = useCallback(async (modelId: string) => {
+  const loadModel = async (modelId: string) => {
     setLoading(true);
     setError(null);
     setModelReady(false);
@@ -101,10 +101,9 @@ export function useImageClassifier() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  };
 
-  const classifyImage = useCallback(
-    async (imageElement: HTMLImageElement | HTMLCanvasElement) => {
+  const classifyImage = async (imageElement: HTMLImageElement | HTMLCanvasElement) => {
       if (!modelRef.current || !configRef.current) {
         setError("Model not loaded yet");
         return;
@@ -159,9 +158,7 @@ export function useImageClassifier() {
       } finally {
         setLoading(false);
       }
-    },
-    [],
-  );
+  };
 
   return {
     loading,

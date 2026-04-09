@@ -1,6 +1,5 @@
 "use client";
 
-import { useMemo } from "react";
 import {
   BarChart,
   Bar,
@@ -29,7 +28,7 @@ interface AnalyticsDashboardProps {
 }
 
 export function AnalyticsDashboard({ data, title }: AnalyticsDashboardProps) {
-  const stats = useMemo(() => computeStats(data), [data]);
+  const stats = computeStats(data);
 
   return (
     <div className="space-y-4">

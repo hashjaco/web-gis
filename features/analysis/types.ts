@@ -18,6 +18,7 @@ export type ClientAnalysisOperation =
 
 export interface AnalysisParams {
   operation: AnalysisOperation;
+  projectId?: string;
   geometry?: GeoJSON.Geometry;
   distance?: number;
   distanceUnit?: "meters" | "kilometers" | "miles";

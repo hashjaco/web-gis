@@ -13,7 +13,7 @@ import {
 import { AgGridProvider, AgGridReact } from "ag-grid-react";
 import * as turf from "@turf/turf";
 import { useTheme } from "next-themes";
-import { useCallback, useEffect, useRef } from "react";
+import { useEffect, useRef } from "react";
 import { useEditingStore } from "@/features/editing/store";
 import { useMapStore } from "@/features/map/store";
 import { useTableData } from "../hooks/use-table-data";
@@ -123,7 +123,7 @@ export function AttributeTable({ layers }: AttributeTableProps) {
     );
   };
 
-  const onRowClicked = useCallback((event: RowClickedEvent) => {
+  const onRowClicked = (event: RowClickedEvent) => {
     const geom = event.data?._geometry as GeoJSON.Geometry | undefined;
     if (!geom || !("coordinates" in geom)) return;
 
@@ -144,7 +144,7 @@ export function AttributeTable({ layers }: AttributeTableProps) {
 
       useMapStore.getState().requestFlyTo(lng, lat, zoom);
     } catch {}
-  }, []);
+  };
 
   const onGridReady = (event: GridReadyEvent) => {
     gridApiRef.current = event.api;

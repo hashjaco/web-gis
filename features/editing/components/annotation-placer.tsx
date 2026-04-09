@@ -6,8 +6,14 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
 import { apiFetch } from "@/lib/api/client";
 import { queryKeys } from "@/lib/query/keys";
+import { useUserPlan } from "@/lib/auth/use-user-plan";
+import {
+  addGuestFeature,
+  type GuestFeatureRecord,
+} from "@/lib/guest/guest-db";
 import { useEditingStore, type DrawStyle } from "../store";
 import { useLayerStore } from "@/features/layers/store";
+import { useProjectStore } from "@/features/projects/store";
 
 function styleProps(ds: DrawStyle) {
   return {
@@ -25,6 +31,9 @@ export function AnnotationPlacer() {
   const setAnnotationMode = useEditingStore((s) => s.setAnnotationMode);
 
   const activeLayerId = useLayerStore((s) => s.activeLayerId);
+  const projectId = useProjectStore((s) => s.activeProject?.id);
+  const { isGuest } = useUserPlan();
+  const useLocal = isGuest || !projectId;
   const queryClient = useQueryClient();
 
   if (!annotationMode || !annotationLngLat) return null;
@@ -32,7 +41,11 @@ export function AnnotationPlacer() {
   const targetLayer = activeLayerId ?? "default";
 
   const handleDone = () => {
+    if (useLocal) {
+      queryClient.invalidateQueries({ queryKey: ["guest-features"] });
+    }
     queryClient.invalidateQueries({ queryKey: queryKeys.features.all });
+    useLayerStore.getState().bumpSourceRevision();
     setAnnotationLngLat(null);
     setAnnotationMode(null);
   };
@@ -55,6 +68,8 @@ export function AnnotationPlacer() {
         <TextAnnotationForm
           lngLat={annotationLngLat}
           layer={targetLayer}
+          projectId={projectId}
+          useLocal={useLocal}
           onDone={handleDone}
           onCancel={handleCancel}
         />
@@ -62,6 +77,8 @@ export function AnnotationPlacer() {
         <ImageAnnotationForm
           lngLat={annotationLngLat}
           layer={targetLayer}
+          projectId={projectId}
+          useLocal={useLocal}
           onDone={handleDone}
           onCancel={handleCancel}
         />
@@ -73,11 +90,15 @@ export function AnnotationPlacer() {
 function TextAnnotationForm({
   lngLat,
   layer,
+  projectId,
+  useLocal,
   onDone,
   onCancel,
 }: {
   lngLat: [number, number];
   layer: string;
+  projectId?: string;
+  useLocal: boolean;
   onDone: () => void;
   onCancel: () => void;
 }) {
@@ -92,14 +113,26 @@ function TextAnnotationForm({
 
     setSaving(true);
     try {
-      await apiFetch("/api/features", {
-        method: "POST",
-        body: {
-          geometry: { type: "Point", coordinates: lngLat },
-          properties: { label: text.trim(), ...styleProps(drawStyle) },
+      const properties = { label: text.trim(), ...styleProps(drawStyle) };
+      const geometry: GeoJSON.Geometry = { type: "Point", coordinates: lngLat };
+
+      if (useLocal) {
+        const now = new Date().toISOString();
+        const record: GuestFeatureRecord = {
+          id: crypto.randomUUID(),
+          geometry,
+          properties,
           layer,
-        },
-      });
+          createdAt: now,
+          updatedAt: now,
+        };
+        await addGuestFeature(record);
+      } else {
+        await apiFetch("/api/features", {
+          method: "POST",
+          body: { geometry, properties, layer, projectId },
+        });
+      }
       onDone();
     } catch {
       setSaving(false);
@@ -142,11 +175,15 @@ function TextAnnotationForm({
 function ImageAnnotationForm({
   lngLat,
   layer,
+  projectId,
+  useLocal,
   onDone,
   onCancel,
 }: {
   lngLat: [number, number];
   layer: string;
+  projectId?: string;
+  useLocal: boolean;
   onDone: () => void;
   onCancel: () => void;
 }) {
@@ -182,29 +219,52 @@ function ImageAnnotationForm({
 
     setSaving(true);
     try {
-      const formData = new FormData();
-      formData.append("file", file);
+      let imageUrl: string;
 
-      const uploadRes = await fetch("/api/uploads", {
-        method: "POST",
-        body: formData,
-      });
-      if (!uploadRes.ok) throw new Error("Upload failed");
-      const { url } = await uploadRes.json();
+      if (useLocal) {
+        imageUrl = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result as string);
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        });
+      } else {
+        const formData = new FormData();
+        formData.append("file", file);
+        const uploadRes = await fetch("/api/uploads", {
+          method: "POST",
+          body: formData,
+        });
+        if (!uploadRes.ok) throw new Error("Upload failed");
+        const data = await uploadRes.json();
+        imageUrl = data.url;
+      }
 
-      await apiFetch("/api/features", {
-        method: "POST",
-        body: {
-          geometry: { type: "Point", coordinates: lngLat },
-          properties: {
-            image_url: url,
-            image_width: width,
-            image_height: height,
-            ...styleProps(drawStyle),
-          },
+      const properties = {
+        image_url: imageUrl,
+        image_width: width,
+        image_height: height,
+        ...styleProps(drawStyle),
+      };
+      const geometry: GeoJSON.Geometry = { type: "Point", coordinates: lngLat };
+
+      if (useLocal) {
+        const now = new Date().toISOString();
+        const record: GuestFeatureRecord = {
+          id: crypto.randomUUID(),
+          geometry,
+          properties,
           layer,
-        },
-      });
+          createdAt: now,
+          updatedAt: now,
+        };
+        await addGuestFeature(record);
+      } else {
+        await apiFetch("/api/features", {
+          method: "POST",
+          body: { geometry, properties, layer, projectId },
+        });
+      }
       onDone();
     } catch {
       setSaving(false);

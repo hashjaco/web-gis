@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useEffect } from "react";
+import { useProjectStore } from "@/features/projects/store";
 import { syncToServer, getPendingChanges } from "./sync";
 
 export function useOfflineMode() {
@@ -30,16 +31,18 @@ export function useOfflineMode() {
     return () => clearInterval(interval);
   }, []);
 
-  const toggleForcedOffline = useCallback(() => {
-    setForcedOffline((prev) => !prev);
-  }, []);
+  const projectId = useProjectStore((s) => s.activeProject?.id);
 
-  const syncNow = useCallback(async () => {
+  const toggleForcedOffline = () => {
+    setForcedOffline((prev) => !prev);
+  };
+
+  const syncNow = async () => {
     if (forcedOffline) return;
     setSyncing(true);
     setSyncErrors([]);
     try {
-      const results = await syncToServer();
+      const results = await syncToServer(projectId);
       const errors = results
         .filter((r) => !r.success)
         .map((r) => `${r.id}: ${r.error}`);
@@ -52,10 +55,9 @@ export function useOfflineMode() {
     } finally {
       setSyncing(false);
     }
-  }, [forcedOffline]);
+  };
 
-  const preCacheExtent = useCallback(
-    async (bbox: [number, number, number, number], zoom: number) => {
+  const preCacheExtent = async (bbox: [number, number, number, number], zoom: number) => {
       const [minLng, minLat, maxLng, maxLat] = bbox;
       const minZ = Math.max(0, zoom - 2);
       const maxZ = Math.min(18, zoom + 2);
@@ -97,9 +99,7 @@ export function useOfflineMode() {
       }
 
       return tileCount;
-    },
-    [],
-  );
+  };
 
   return {
     isOffline: isOffline || forcedOffline,

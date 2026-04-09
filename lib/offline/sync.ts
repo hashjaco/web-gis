@@ -76,7 +76,7 @@ export async function getPendingChanges() {
     .toArray();
 }
 
-export async function syncToServer() {
+export async function syncToServer(projectId?: string) {
   const pending = await getPendingChanges();
   const results: { id: string; success: boolean; error?: string }[] = [];
 
@@ -91,6 +91,7 @@ export async function syncToServer() {
               geometry: item.geometry,
               properties: item.properties,
               layer: item.layer,
+              projectId,
             }),
           });
           if (res.ok) {

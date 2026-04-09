@@ -1,16 +1,14 @@
 import { auth } from "@clerk/nextjs/server";
-import { mkdir, writeFile } from "node:fs/promises";
-import { join } from "node:path";
 import { NextResponse } from "next/server";
+import { uploadFile } from "@/lib/storage";
 
-const UPLOAD_DIR = join(process.cwd(), "uploads");
+const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
 
 const ALLOWED_MIME: Record<string, string> = {
   "image/jpeg": "jpg",
   "image/png": "png",
   "image/gif": "gif",
   "image/webp": "webp",
-  "image/svg+xml": "svg",
 };
 
 export async function POST(request: Request) {
@@ -25,6 +23,13 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "file field is required" }, { status: 400 });
   }
 
+  if (file.size > MAX_FILE_SIZE) {
+    return NextResponse.json(
+      { error: "File too large. Maximum size is 10 MB." },
+      { status: 400 },
+    );
+  }
+
   const ext = ALLOWED_MIME[file.type];
   if (!ext) {
     return NextResponse.json(
@@ -34,14 +39,12 @@ export async function POST(request: Request) {
   }
 
   const filename = `${crypto.randomUUID()}.${ext}`;
-
-  await mkdir(UPLOAD_DIR, { recursive: true });
-
   const buffer = Buffer.from(await file.arrayBuffer());
-  await writeFile(join(UPLOAD_DIR, filename), buffer);
+
+  const result = await uploadFile(buffer, filename, file.type);
 
   return NextResponse.json({
-    url: `/api/uploads/${filename}`,
-    filename,
+    url: result.url,
+    key: result.key,
   });
 }

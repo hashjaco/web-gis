@@ -4,6 +4,7 @@ import { Download, RefreshCw, Trash2, CheckSquare } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "@/lib/api/client";
 import { useLayerStore } from "@/features/layers/store";
+import { useProjectStore } from "@/features/projects/store";
 import type { TableFeature } from "../types";
 
 interface TableToolbarProps {
@@ -26,10 +27,11 @@ export function TableToolbar({
   onExportCsv,
 }: TableToolbarProps) {
   const queryClient = useQueryClient();
+  const projectId = useProjectStore((s) => s.activeProject?.id);
 
   const batchDelete = useMutation({
     mutationFn: (ids: string[]) =>
-      apiFetch("/api/features/batch", { method: "DELETE", body: { ids } }),
+      apiFetch("/api/features/batch", { method: "DELETE", body: { ids, projectId } }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["features"] });
       onClearSelection?.();

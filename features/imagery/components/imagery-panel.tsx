@@ -1,7 +1,7 @@
 "use client";
 
 import { Eye, EyeOff, Info, Loader2, Satellite, Search, Trash2 } from "lucide-react";
-import { useCallback, useState } from "react";
+import { useState } from "react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useMapInstance } from "@/features/map/hooks/use-map-instance";
 import { useMapStore } from "@/features/map/store";
@@ -36,21 +36,18 @@ export function ImageryPanel() {
     });
   };
 
-  const handleAdd = useCallback(
-    (item: ImageryResult) => {
-      if (!item.cogUrl) return;
-      addLayer({
-        id: item.id,
-        url: item.cogUrl,
-        name: item.name,
-        bbox: item.bbox,
-      });
-      if (map) {
-        map.fitBounds(item.bbox, { padding: 40, maxZoom: 14 });
-      }
-    },
-    [addLayer, map],
-  );
+  const handleAdd = (item: ImageryResult) => {
+    if (!item.cogUrl) return;
+    addLayer({
+      id: item.id,
+      url: item.cogUrl,
+      name: item.name,
+      bbox: item.bbox,
+    });
+    if (map) {
+      map.fitBounds(item.bbox, { padding: 40, maxZoom: 14 });
+    }
+  };
 
   return (
     <div className="flex h-full w-full flex-col bg-background">

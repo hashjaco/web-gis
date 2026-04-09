@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useRef } from "react";
+import { useRef } from "react";
 import { useMapInstance } from "@/features/map/hooks/use-map-instance";
 import { useMediaStore } from "../store";
 
@@ -11,8 +11,7 @@ export function useVideoOverlay() {
   const addOverlay = useMediaStore((s) => s.addOverlay);
   const removeOverlay = useMediaStore((s) => s.removeOverlay);
 
-  const addVideoSource = useCallback(
-    (id: string, url: string, bounds: [number, number, number, number]) => {
+  const addVideoSource = (id: string, url: string, bounds: [number, number, number, number]) => {
       if (!map) return;
 
       const video = document.createElement("video");
@@ -56,12 +55,9 @@ export function useVideoOverlay() {
         opacity: 85,
         isVisible: true,
       });
-    },
-    [map, addOverlay],
-  );
+  };
 
-  const removeVideoSource = useCallback(
-    (id: string) => {
+  const removeVideoSource = (id: string) => {
       if (!map) return;
       try {
         if (map.getLayer(`video-layer-${id}`)) map.removeLayer(`video-layer-${id}`);
@@ -76,12 +72,9 @@ export function useVideoOverlay() {
       }
 
       removeOverlay(id);
-    },
-    [map, removeOverlay],
-  );
+  };
 
-  const captureFrame = useCallback(
-    (overlayId: string): HTMLCanvasElement | null => {
+  const captureFrame = (overlayId: string): HTMLCanvasElement | null => {
       const video = videoRefs.current.get(overlayId);
       if (!video || video.readyState < 2) return null;
 
@@ -95,20 +88,15 @@ export function useVideoOverlay() {
       if (!ctx) return null;
       ctx.drawImage(video, 0, 0);
       return canvas;
-    },
-    [],
-  );
+  };
 
-  const setOpacity = useCallback(
-    (id: string, opacity: number) => {
+  const setOpacity = (id: string, opacity: number) => {
       if (!map) return;
       const layerId = `video-layer-${id}`;
       if (map.getLayer(layerId)) {
         map.setPaintProperty(layerId, "raster-opacity", opacity / 100);
       }
-    },
-    [map],
-  );
+  };
 
   return { addVideoSource, removeVideoSource, captureFrame, setOpacity };
 }

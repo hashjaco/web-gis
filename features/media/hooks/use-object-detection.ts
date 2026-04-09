@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useRef } from "react";
+import { useRef } from "react";
 import { useMediaStore } from "../store";
 import type { Detection } from "../types";
 
@@ -58,7 +58,7 @@ export function useObjectDetection() {
   const setModelLoading = useMediaStore((s) => s.setModelLoading);
   const addDetection = useMediaStore((s) => s.addDetection);
 
-  const loadModel = useCallback(async () => {
+  const loadModel = async () => {
     setModelLoading(true);
     try {
       const ort = await import("onnxruntime-web");
@@ -74,10 +74,9 @@ export function useObjectDetection() {
     } finally {
       setModelLoading(false);
     }
-  }, [setModelLoaded, setModelLoading]);
+  };
 
-  const detect = useCallback(
-    async (
+  const detect = async (
       canvas: HTMLCanvasElement,
       location: [number, number] | null = null,
     ): Promise<Detection[]> => {
@@ -147,9 +146,7 @@ export function useObjectDetection() {
         addDetection(det);
       }
       return filtered;
-    },
-    [addDetection],
-  );
+  };
 
   return { loadModel, detect };
 }

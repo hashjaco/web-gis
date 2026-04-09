@@ -8,7 +8,7 @@ import {
   Map as MapIcon,
   Loader2,
 } from "lucide-react";
-import { useRef, useState, useCallback } from "react";
+import { useRef, useState } from "react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 const SUPPORTED_FORMATS = [
@@ -24,6 +24,8 @@ interface ImportPanelViewProps {
   importing: boolean;
   error: string | null;
   progress: number;
+  disabled?: boolean;
+  disabledReason?: string;
   onImport: (file: File, layerName: string) => void;
 }
 
@@ -31,20 +33,19 @@ export function ImportPanelView({
   importing,
   error,
   progress,
+  disabled,
+  disabledReason,
   onImport,
 }: ImportPanelViewProps) {
   const fileRef = useRef<HTMLInputElement>(null);
   const [targetLayer, setTargetLayer] = useState("");
 
-  const handleFileChange = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      const file = e.target.files?.[0];
-      if (!file) return;
-      onImport(file, targetLayer || file.name.replace(/\.[^.]+$/, ""));
-      if (fileRef.current) fileRef.current.value = "";
-    },
-    [onImport, targetLayer],
-  );
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    onImport(file, targetLayer || file.name.replace(/\.[^.]+$/, ""));
+    if (fileRef.current) fileRef.current.value = "";
+  };
 
   return (
     <div className="flex h-full w-full flex-col bg-background">
@@ -120,6 +121,11 @@ export function ImportPanelView({
       </div>
 
       <div className="border-t p-3">
+        {disabledReason && (
+          <p className="mb-2 text-center text-xs text-muted-foreground">
+            {disabledReason}
+          </p>
+        )}
         <input
           ref={fileRef}
           type="file"
@@ -133,14 +139,16 @@ export function ImportPanelView({
             <button
               type="button"
               onClick={() => fileRef.current?.click()}
-              disabled={importing}
+              disabled={importing || disabled}
               className="flex w-full items-center justify-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground transition-colors hover:bg-primary/90 active:scale-[0.98] disabled:opacity-50"
             >
               <FileUp className="h-3 w-3" />
               Choose File
             </button>
           </TooltipTrigger>
-          <TooltipContent>Select a file to import</TooltipContent>
+          <TooltipContent>
+            {disabled ? disabledReason : "Select a file to import"}
+          </TooltipContent>
         </Tooltip>
       </div>
     </div>

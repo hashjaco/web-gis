@@ -1,7 +1,8 @@
 "use client";
 
-import { Show, UserButton } from "@clerk/nextjs";
-import { Check, Cloud, Link2, Loader2, Map, Save } from "lucide-react";
+import { OrganizationSwitcher, Show, UserButton } from "@clerk/nextjs";
+import { Check, Cloud, Link2, Loader2, Save } from "lucide-react";
+import { LogoMark } from "@/components/logo";
 import { useEffect, useState } from "react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useProjectStore } from "@/features/projects/store";
@@ -82,9 +83,12 @@ export function AppHeader({ onCreateProject }: AppHeaderProps) {
   return (
     <header className="flex h-12 shrink-0 items-center justify-between border-b bg-background px-4">
       <div className="flex items-center gap-3">
-        <div className="flex items-center gap-2">
-          <Map className="h-5 w-5 text-primary" />
-          <span className="text-sm font-semibold tracking-tight">ShimGIS</span>
+        <div className="flex items-center gap-1.5">
+          <LogoMark size={28} />
+          <span className="text-sm font-semibold tracking-tight">
+            <span className="text-primary">Shim</span>
+            <span>GIS</span>
+          </span>
         </div>
         {activeProject && (
           <>
@@ -131,9 +135,25 @@ export function AppHeader({ onCreateProject }: AppHeaderProps) {
         <ThemeToggle />
         <OnlineIndicator />
         <Show when="signed-in">
+          <OrganizationSwitcher
+            hidePersonal={false}
+            appearance={{
+              elements: {
+                rootBox: "flex items-center",
+                organizationSwitcherTrigger:
+                  "rounded-md px-2 py-1 text-sm text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors",
+              },
+            }}
+          />
           <UserButton />
         </Show>
         <Show when="signed-out">
+          <a
+            href="/pricing"
+            className="rounded-md border px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+          >
+            Pricing
+          </a>
           <a
             href="/sign-in"
             className="rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground transition-colors hover:bg-primary/90"

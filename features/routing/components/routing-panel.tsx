@@ -1,7 +1,7 @@
 "use client";
 
 import { ArrowDownUp, Crosshair, Info, Lock, Loader2, Route, Search, X } from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { apiFetch } from "@/lib/api/client";
@@ -56,7 +56,7 @@ function LocationInput({
   const [searching, setSearching] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
-  const searchGeocode = useCallback(async (q: string) => {
+  const searchGeocode = async (q: string) => {
     if (q.length < 3) {
       setResults([]);
       return;
@@ -71,7 +71,7 @@ function LocationInput({
     } finally {
       setSearching(false);
     }
-  }, []);
+  };
 
   const handleSearchInput = (q: string) => {
     setQuery(q);
