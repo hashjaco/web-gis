@@ -1,4 +1,5 @@
-// MapboxDraw custom mode — `this` is bound by MapboxDraw at runtime
+import { useEditingStore } from "../store";
+
 // biome-ignore lint: MapboxDraw mode context requires any
 const DrawRectangle: any = {
   onSetup() {
@@ -9,7 +10,7 @@ const DrawRectangle: any = {
     });
     this.addFeature(rect);
     this.setActionableState({ trash: true, combineFeatures: false, uncombineFeatures: false });
-    return { rect, startPoint: null as [number, number] | null };
+    return { rect, startPoint: null as [number, number] | null, completed: false };
   },
 
   onClick(state: any, e: any) {
@@ -27,6 +28,7 @@ const DrawRectangle: any = {
           [x1, y1],
         ],
       ]);
+      state.completed = true;
       this.map.fire("draw.create", { features: [state.rect.toGeoJSON()] });
       this.changeMode("simple_select");
     }
@@ -47,9 +49,9 @@ const DrawRectangle: any = {
     ]);
   },
 
-  onKeyUp(_state: any, e: any) {
+  onKeyUp(state: any, e: any) {
     if (e.key === "Escape") {
-      this.deleteFeature(String(_state.rect.id), { silent: true });
+      this.deleteFeature(String(state.rect.id), { silent: true });
       this.changeMode("simple_select");
     }
   },
@@ -59,8 +61,20 @@ const DrawRectangle: any = {
     this.changeMode("simple_select");
   },
 
+  onStop(state: any) {
+    if (!state.completed) {
+      try { this.deleteFeature(String(state.rect.id), { silent: true }); } catch {}
+    }
+    const s = useEditingStore.getState();
+    if (s.drawMode === "draw_rectangle") s.setDrawMode(null);
+  },
+
   toDisplayFeatures(state: any, geojson: any, display: any) {
-    if (geojson.geometry?.coordinates?.[0]?.length > 1) {
+    if (geojson.properties?.id === state.rect.id) {
+      if (geojson.geometry?.coordinates?.[0]?.length > 1) {
+        display(geojson);
+      }
+    } else {
       display(geojson);
     }
     if (state.startPoint) {

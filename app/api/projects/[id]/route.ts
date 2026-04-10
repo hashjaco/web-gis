@@ -5,6 +5,10 @@ import { db } from "@/lib/db";
 import { authorizeProject } from "@/lib/auth/authorize-project";
 import { parseBody } from "@/lib/validation/parse";
 import { updateProjectSchema } from "@/lib/validation/schemas";
+// #region agent log
+import { appendFileSync } from "fs";
+const _dbg = (msg: string, data: Record<string, unknown>) => { try { appendFileSync('/Users/hashim/Projects/gis-web/.cursor/debug-38ed0f.log', JSON.stringify({sessionId:'38ed0f',location:'api/projects/[id]/route.ts',message:msg,data,timestamp:Date.now()}) + '\n'); } catch {} };
+// #endregion
 
 export async function GET(
   _request: Request,
@@ -24,18 +28,32 @@ export async function PUT(
   request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  // #region agent log
+  _dbg('PUT-entry', {url: request.url});
+  // #endregion
   const { userId } = await auth();
   if (!userId)
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { id } = await params;
+  // #region agent log
+  _dbg('PUT-pre-authorize', {userId, id});
+  // #endregion
 
   const project = await authorizeProject(userId, id, "write");
+  // #region agent log
+  _dbg('PUT-post-authorize', {projectFound: !!project, id, userId, ownerId: project?.owner_id});
+  // #endregion
   if (!project)
     return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   const parsed = await parseBody(request, updateProjectSchema);
-  if (parsed.error) return parsed.error;
+  if (parsed.error) {
+    // #region agent log
+    _dbg('PUT-parse-error', {id});
+    // #endregion
+    return parsed.error;
+  }
   const { name, description, state, isPublic } = parsed.data;
 
   const rows = (await db.execute(sql`
@@ -49,6 +67,9 @@ export async function PUT(
     RETURNING *
   `)) as unknown as Record<string, unknown>[];
 
+  // #region agent log
+  _dbg('PUT-update-result', {id, rowCount: rows.length, rowsType: typeof rows, isArray: Array.isArray(rows)});
+  // #endregion
   if (rows.length === 0)
     return NextResponse.json({ error: "Not found" }, { status: 404 });
 

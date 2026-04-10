@@ -11,7 +11,7 @@ const cspDirectives = [
   // Fonts
   "font-src 'self' data:",
   // Connect: API calls, tile servers, geocoding, routing
-  "connect-src 'self' https://api.maptiler.com https://*.maptiler.com https://demotiles.maplibre.org https://nominatim.openstreetmap.org https://*.clerk.accounts.dev https://*.clerk.dev https://clerk-telemetry.com https://*.liveblocks.io wss://*.liveblocks.io blob:",
+  "connect-src 'self' http://127.0.0.1:7897 https://api.maptiler.com https://*.maptiler.com https://demotiles.maplibre.org https://nominatim.openstreetmap.org https://*.clerk.accounts.dev https://*.clerk.dev https://clerk-telemetry.com https://*.liveblocks.io wss://*.liveblocks.io blob:",
   // Workers for maplibre-gl
   "worker-src 'self' blob:",
   // Child/frame for embeds

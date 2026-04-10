@@ -24,6 +24,10 @@ import DrawRectangle from "../modes/draw-rectangle";
 import DrawFreehand from "../modes/draw-freehand";
 import DrawMarker from "../modes/draw-marker";
 
+// ---------------------------------------------------------------------------
+// Style expressions
+// ---------------------------------------------------------------------------
+
 const STROKE_COLOR_EXPR = [
   "coalesce",
   ["get", "user_stroke_color"],
@@ -95,7 +99,6 @@ const MAPLIBRE_DRAW_STYLES: Record<string, unknown>[] = [
     layout: { "line-cap": "round", "line-join": "round" },
     paint: {
       "line-color": "#fbb03b",
-
       "line-dasharray": [0.2, 2],
       "line-width": 2,
     },
@@ -234,10 +237,7 @@ const MAPLIBRE_DRAW_STYLES: Record<string, unknown>[] = [
       ["==", "meta", "feature"],
       ["has", "user__isMarker"],
     ],
-    paint: {
-      "circle-radius": 10,
-      "circle-color": "#fff",
-    },
+    paint: { "circle-radius": 10, "circle-color": "#fff" },
   },
   {
     id: "gl-draw-marker-inactive",
@@ -249,10 +249,7 @@ const MAPLIBRE_DRAW_STYLES: Record<string, unknown>[] = [
       ["==", "meta", "feature"],
       ["has", "user__isMarker"],
     ],
-    paint: {
-      "circle-radius": 7,
-      "circle-color": FILL_COLOR_EXPR,
-    },
+    paint: { "circle-radius": 7, "circle-color": FILL_COLOR_EXPR },
   },
   {
     id: "gl-draw-marker-border-active",
@@ -264,10 +261,7 @@ const MAPLIBRE_DRAW_STYLES: Record<string, unknown>[] = [
       ["!=", "meta", "midpoint"],
       ["has", "user__isMarker"],
     ],
-    paint: {
-      "circle-radius": 12,
-      "circle-color": "#fff",
-    },
+    paint: { "circle-radius": 12, "circle-color": "#fff" },
   },
   {
     id: "gl-draw-marker-active",
@@ -279,10 +273,7 @@ const MAPLIBRE_DRAW_STYLES: Record<string, unknown>[] = [
       ["!=", "meta", "midpoint"],
       ["has", "user__isMarker"],
     ],
-    paint: {
-      "circle-radius": 9,
-      "circle-color": "#fbb03b",
-    },
+    paint: { "circle-radius": 9, "circle-color": "#fbb03b" },
   },
   {
     id: "gl-draw-image-inactive",
@@ -320,8 +311,9 @@ const MAPLIBRE_DRAW_STYLES: Record<string, unknown>[] = [
   },
 ];
 
-const UUID_RE =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+// ---------------------------------------------------------------------------
+// Snapping helpers
+// ---------------------------------------------------------------------------
 
 function collectVertices(
   features: GeoJSON.Feature[],
@@ -373,12 +365,7 @@ function snapGeometry(
 
   switch (cloned.type) {
     case "Point":
-      cloned.coordinates = snapCoord(
-        cloned.coordinates,
-        snapPoints,
-        map,
-        tolerancePx,
-      );
+      cloned.coordinates = snapCoord(cloned.coordinates, snapPoints, map, tolerancePx);
       break;
     case "MultiPoint":
       cloned.coordinates = mapCoords(cloned.coordinates);
@@ -393,14 +380,29 @@ function snapGeometry(
       cloned.coordinates = cloned.coordinates.map(mapCoords);
       break;
     case "MultiPolygon":
-      cloned.coordinates = cloned.coordinates.map((poly) =>
-        poly.map(mapCoords),
-      );
+      cloned.coordinates = cloned.coordinates.map((poly) => poly.map(mapCoords));
       break;
   }
 
   return cloned;
 }
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+function featureId(f: GeoJSON.Feature): string {
+  return String(
+    f.id ?? (f.properties as Record<string, unknown>)?._id ?? "",
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Hook
+// ---------------------------------------------------------------------------
 
 export function useDraw(
   selectedLayers: string[],
@@ -409,7 +411,6 @@ export function useDraw(
   const map = useMapInstance();
   const drawRef = useRef<MapboxDraw | null>(null);
   const drawMode = useEditingStore((s) => s.drawMode);
-  const idMapRef = useRef(new Map<string, string>());
   const selectedLayersRef = useRef(selectedLayers);
   selectedLayersRef.current = selectedLayers;
   const layerColorsRef = useRef(layerColors);
@@ -422,6 +423,10 @@ export function useDraw(
   const useLocal = isGuest || !projectId;
   const useLocalRef = useRef(useLocal);
   useLocalRef.current = useLocal;
+
+  // -----------------------------------------------------------------------
+  // Feature queries — one per selected layer
+  // -----------------------------------------------------------------------
 
   const layerQueries = useQueries({
     queries: selectedLayers.map((layerId) => {
@@ -454,6 +459,10 @@ export function useDraw(
     }),
   });
 
+  // -----------------------------------------------------------------------
+  // Init effect — create MapboxDraw, wire event handlers
+  // -----------------------------------------------------------------------
+
   useEffect(() => {
     if (!map || drawRef.current) return;
 
@@ -474,8 +483,12 @@ export function useDraw(
     map.addControl(draw as unknown as maplibregl.IControl);
     drawRef.current = draw;
 
-    const invalidateFeatures = () =>
+    const invalidateAll = () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.features.all });
+      queryClient.invalidateQueries({ queryKey: ["guest-features"] });
+    };
+
+    // -- onCreate: optimistic cache + persist + repeating mode re-entry ----
 
     const onCreate = (e: { features: GeoJSON.Feature[] }) => {
       const { snapping, drawStyle } = useEditingStore.getState();
@@ -484,6 +497,7 @@ export function useDraw(
         selectedLayersRef.current[selectedLayersRef.current.length - 1] ??
         "default";
       const color = layerColorsRef.current[targetLayer] ?? "#3bb2d0";
+
       for (const feature of e.features) {
         let sample: unknown = (feature.geometry as any)?.coordinates;
         if (!Array.isArray(sample) || sample.length === 0) continue;
@@ -491,21 +505,14 @@ export function useDraw(
           sample = (sample as unknown[])[0];
         if (typeof (sample as unknown[])[0] !== "number") continue;
 
-        const drawId = String(feature.id ?? "");
-
         if (snapping.enabled && map) {
-          const allFeatures = (draw as any).getAll()
-            .features as GeoJSON.Feature[];
+          const allFeatures = (draw as any).getAll().features as GeoJSON.Feature[];
           feature.geometry = snapGeometry(
-            feature.geometry,
-            allFeatures,
-            feature.id,
-            map,
-            snapping.tolerance,
+            feature.geometry, allFeatures, feature.id, map, snapping.tolerance,
           );
         }
 
-        feature.properties = {
+        const props: Record<string, unknown> = {
           ...(feature.properties ?? {}),
           layer_color: color,
           stroke_color: drawStyle.strokeColor,
@@ -513,90 +520,102 @@ export function useDraw(
           fill_color: drawStyle.fillColor,
           fill_opacity: drawStyle.fillOpacity / 100,
         };
-        setTimeout(() => {
-          const d = drawRef.current as any;
-          if (!d) return;
-          const f = d.get(drawId);
-          if (f) {
-            f.properties = {
-              ...f.properties,
-              layer_color: color,
-              stroke_color: drawStyle.strokeColor,
-              stroke_width: drawStyle.strokeWidth,
-              fill_color: drawStyle.fillColor,
-              fill_opacity: drawStyle.fillOpacity / 100,
-            };
-            if (snapping.enabled && map) {
-              f.geometry = feature.geometry;
+        feature.properties = props;
+
+        // Update the feature in Draw so styles apply immediately
+        const drawId = String(feature.id ?? "");
+        if (drawId) {
+          setTimeout(() => {
+            const d = drawRef.current as any;
+            if (!d) return;
+            const f = d.get(drawId);
+            if (f) {
+              f.properties = { ...f.properties, ...props };
+              if (snapping.enabled) f.geometry = feature.geometry;
+              d.add(f);
             }
-            d.add(f);
-          }
-        }, 0);
+          }, 0);
+        }
+
+        // Build the optimistic feature with a stable UUID
+        const tempId = crypto.randomUUID();
+        const optimistic: GeoJSON.Feature = {
+          type: "Feature",
+          id: tempId,
+          geometry: feature.geometry,
+          properties: { ...props, _id: tempId, _layer: targetLayer },
+        };
+
+        // Insert into the React Query cache immediately
+        const cacheKey = useLocalRef.current
+          ? ["guest-features", targetLayer]
+          : queryKeys.features.list({
+              projectId: projectIdRef.current,
+              layer: targetLayer,
+            });
+
+        queryClient.setQueryData<GeoJSON.FeatureCollection>(cacheKey, (old) => ({
+          type: "FeatureCollection",
+          features: [...(old?.features ?? []), optimistic],
+        }));
+
+        // Persist in the background
         if (useLocalRef.current) {
           const now = new Date().toISOString();
           const record: GuestFeatureRecord = {
-            id: crypto.randomUUID(),
+            id: tempId,
             geometry: feature.geometry,
-            properties: (feature.properties ?? {}) as Record<string, unknown>,
+            properties: props,
             layer: targetLayer,
             createdAt: now,
             updatedAt: now,
           };
           addGuestFeature(record)
             .then(() => {
-              if (drawId) idMapRef.current.set(drawId, record.id);
               useLayerStore.getState().bumpSourceRevision();
-              invalidateFeatures();
+              invalidateAll();
             })
-            .catch(() => {});
+            .catch(() => invalidateAll());
         } else {
           apiFetch<{ id: string }>("/api/features", {
             method: "POST",
             body: {
               geometry: feature.geometry,
-              properties: (feature.properties ?? {}) as Record<string, unknown>,
+              properties: props,
               layer: targetLayer,
               projectId: projectIdRef.current,
             },
           })
-            .then((created) => {
-              if (drawId && created?.id) {
-                idMapRef.current.set(drawId, created.id);
-              }
-              invalidateFeatures();
-            })
-            .catch(() => {});
+            .then(() => invalidateAll())
+            .catch(() => invalidateAll());
         }
       }
 
+      // For built-in repeating modes, re-enter the same mode after Draw
+      // finishes its transition to simple_select.
       const currentMode = useEditingStore.getState().drawMode;
       if (
-        currentMode === "draw_circle" ||
-        currentMode === "draw_rectangle" ||
-        currentMode === "draw_freehand" ||
-        currentMode === "draw_marker"
+        currentMode === "draw_point" ||
+        currentMode === "draw_line_string" ||
+        currentMode === "draw_polygon"
       ) {
-        useEditingStore.getState().setDrawMode(null);
+        setTimeout(() => {
+          if (drawRef.current) {
+            (drawRef.current as any).changeMode(currentMode);
+          }
+        }, 50);
       }
     };
 
-    const resolveDbId = (drawId: string): string | null => {
-      if (UUID_RE.test(drawId)) return drawId;
-      return idMapRef.current.get(drawId) ?? null;
-    };
+    // -- onUpdate: persist geometry changes directly --------------------
 
     const onUpdate = (e: { features: GeoJSON.Feature[] }) => {
       const { snapping } = useEditingStore.getState();
       for (const feature of e.features) {
         if (snapping.enabled && map) {
-          const allFeatures = (draw as any).getAll()
-            .features as GeoJSON.Feature[];
+          const allFeatures = (draw as any).getAll().features as GeoJSON.Feature[];
           feature.geometry = snapGeometry(
-            feature.geometry,
-            allFeatures,
-            feature.id,
-            map,
-            snapping.tolerance,
+            feature.geometry, allFeatures, feature.id, map, snapping.tolerance,
           );
           setTimeout(() => {
             const d = drawRef.current as any;
@@ -609,76 +628,58 @@ export function useDraw(
           }, 0);
         }
 
-        const dbId = feature.id ? resolveDbId(String(feature.id)) : null;
-        if (dbId) {
-          if (useLocalRef.current) {
-            updateGuestFeature(dbId, { geometry: feature.geometry })
-              .then(() => {
-                useLayerStore.getState().bumpSourceRevision();
-                invalidateFeatures();
-              })
-              .catch(() => {});
-          } else {
-            apiFetch(`/api/features/${dbId}`, {
-              method: "PUT",
-              body: { geometry: feature.geometry },
+        const id = feature.id ? String(feature.id) : null;
+        if (!id || !UUID_RE.test(id)) continue;
+
+        if (useLocalRef.current) {
+          updateGuestFeature(id, { geometry: feature.geometry })
+            .then(() => {
+              useLayerStore.getState().bumpSourceRevision();
+              invalidateAll();
             })
-              .then(() => invalidateFeatures())
-              .catch(() => {});
-          }
+            .catch(() => {});
+        } else {
+          apiFetch(`/api/features/${id}`, {
+            method: "PUT",
+            body: { geometry: feature.geometry },
+          })
+            .then(() => invalidateAll())
+            .catch(() => {});
         }
       }
     };
+
+    // -- onDelete: persist deletions directly ---------------------------
 
     const onDelete = (e: { features: GeoJSON.Feature[] }) => {
       for (const feature of e.features) {
-        const drawId = String(feature.id ?? "");
-        const dbId = drawId ? resolveDbId(drawId) : null;
-        if (dbId) {
-          if (useLocalRef.current) {
-            removeGuestFeature(dbId)
-              .then(() => {
-                useLayerStore.getState().bumpSourceRevision();
-                invalidateFeatures();
-              })
-              .catch(() => {});
-          } else {
-            apiFetch(`/api/features/${dbId}`, { method: "DELETE" })
-              .then(() => invalidateFeatures())
-              .catch(() => {});
-          }
-          idMapRef.current.delete(drawId);
-        }
-      }
-    };
+        const id = feature.id ? String(feature.id) : null;
+        if (!id || !UUID_RE.test(id)) continue;
 
-    const onModeChange = (e: { mode: string }) => {
-      const desired = useEditingStore.getState().drawMode;
-      if (
-        desired &&
-        desired !== "simple_select" &&
-        e.mode === "simple_select"
-      ) {
-        setTimeout(() => {
-          if (drawRef.current) {
-            // biome-ignore lint: MapboxDraw types are overly strict
-            (drawRef.current as any).changeMode(desired);
-          }
-        }, 0);
+        if (useLocalRef.current) {
+          removeGuestFeature(id)
+            .then(() => {
+              useLayerStore.getState().bumpSourceRevision();
+              invalidateAll();
+            })
+            .catch(() => {});
+        } else {
+          apiFetch(`/api/features/${id}`, { method: "DELETE" })
+            .then(() => invalidateAll())
+            .catch(() => {});
+        }
       }
     };
 
     map.on("draw.create", onCreate);
     map.on("draw.update", onUpdate);
     map.on("draw.delete", onDelete);
-    map.on("draw.modechange", onModeChange);
 
     return () => {
       if (map.getCanvas()) {
         map.off("draw.create", onCreate);
         map.off("draw.update", onUpdate);
         map.off("draw.delete", onDelete);
-        map.off("draw.modechange", onModeChange);
       }
       if (drawRef.current) {
         try {
@@ -691,11 +692,13 @@ export function useDraw(
     };
   }, [map, queryClient]);
 
+  // -----------------------------------------------------------------------
+  // Non-destructive reconciliation sync
+  // -----------------------------------------------------------------------
+
   const allReady = layerQueries.every((q) => q.isSuccess);
   const queriesDataRaw = layerQueries.map((q) => q.data);
 
-  // Stabilize queriesData so the sync effect only fires when query results
-  // actually change, not on every render triggered by draw mode switches.
   const queriesDataRef = useRef(queriesDataRaw);
   if (
     queriesDataRaw.length !== queriesDataRef.current.length ||
@@ -709,46 +712,63 @@ export function useDraw(
     const draw = drawRef.current;
     if (!draw || !allReady) return;
 
-    idMapRef.current.clear();
-    // biome-ignore lint: MapboxDraw types are overly strict
-    (draw as any).deleteAll();
-
-    if (selectedLayers.length === 0) return;
-
-    const merged: GeoJSON.Feature[] = [];
+    // Build target feature set from query data
+    const targetFeatures = new Map<string, GeoJSON.Feature>();
     for (let i = 0; i < selectedLayers.length; i++) {
-      const layerId = selectedLayers[i];
       const fc = queriesData[i];
       if (!fc) continue;
-      const color = layerColors[layerId] ?? "#3bb2d0";
+      const color = layerColors[selectedLayers[i]] ?? "#3bb2d0";
       for (const f of fc.features) {
-        f.properties = { ...(f.properties ?? {}), layer_color: color };
-        merged.push(f);
+        const id = featureId(f);
+        if (!id) continue;
+        targetFeatures.set(id, {
+          ...f,
+          properties: { ...(f.properties ?? {}), layer_color: color },
+        });
       }
     }
-    if (merged.length > 0) {
-      // biome-ignore lint: MapboxDraw types are overly strict
-      (draw as any).set({
-        type: "FeatureCollection",
-        features: merged,
-      });
+
+    // Get current Draw state
+    const drawFeatures = (draw as any).getAll().features as GeoJSON.Feature[];
+    const drawIds = new Set<string>();
+    for (const f of drawFeatures) {
+      const id = featureId(f);
+      if (id) drawIds.add(id);
     }
 
-    const currentDrawMode = useEditingStore.getState().drawMode;
-    if (currentDrawMode && currentDrawMode !== "simple_select") {
-      setTimeout(() => {
-        if (drawRef.current) {
-          // biome-ignore lint: MapboxDraw types are overly strict
-          (drawRef.current as any).changeMode(currentDrawMode);
+    const targetIds = new Set(targetFeatures.keys());
+
+    // Remove features no longer in target (layer removed, feature deleted)
+    for (const id of drawIds) {
+      if (!targetIds.has(id)) {
+        try { (draw as any).delete(id); } catch {}
+      }
+    }
+
+    // Add new features from target; update existing ones
+    for (const [id, feature] of targetFeatures) {
+      if (drawIds.has(id)) {
+        const existing = (draw as any).get(id);
+        if (existing) {
+          existing.properties = {
+            ...existing.properties,
+            ...(feature.properties ?? {}),
+          };
+          (draw as any).add(existing);
         }
-      }, 0);
+      } else {
+        (draw as any).add(feature);
+      }
     }
   }, [queriesData, allReady, selectedLayers, layerColors]);
+
+  // -----------------------------------------------------------------------
+  // Single drawMode driver
+  // -----------------------------------------------------------------------
 
   useEffect(() => {
     if (!drawRef.current) return;
     const target = drawMode ?? "simple_select";
-    // biome-ignore lint: MapboxDraw types are overly strict
     (drawRef.current as any).changeMode(target);
   }, [drawMode]);
 }

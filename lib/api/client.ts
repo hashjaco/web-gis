@@ -22,6 +22,9 @@ export async function apiFetch<T>(
 ): Promise<T> {
   const { method = "GET", body, headers = {} } = options;
 
+  // #region agent log
+  fetch('http://127.0.0.1:7897/ingest/62820f91-a5c2-4d7a-9a0a-e64d00b67289',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'38ed0f'},body:JSON.stringify({sessionId:'38ed0f',location:'client.ts:apiFetch-pre',message:'apiFetch request',data:{url,method},timestamp:Date.now(),hypothesisId:'H4'})}).catch(()=>{});
+  // #endregion
   const res = await fetch(url, {
     method,
     headers: {
@@ -31,6 +34,9 @@ export async function apiFetch<T>(
     body: body ? JSON.stringify(body) : undefined,
     redirect: "manual",
   });
+  // #region agent log
+  fetch('http://127.0.0.1:7897/ingest/62820f91-a5c2-4d7a-9a0a-e64d00b67289',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'38ed0f'},body:JSON.stringify({sessionId:'38ed0f',location:'client.ts:apiFetch-post',message:'apiFetch response',data:{url,method,status:res.status,statusText:res.statusText},timestamp:Date.now(),hypothesisId:'H1'})}).catch(()=>{});
+  // #endregion
 
   if (res.status >= 300 && res.status < 400) {
     throw new ApiError(res.status, "Authentication required. Please sign in.");

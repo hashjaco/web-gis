@@ -92,41 +92,41 @@ export default function DashboardLayout({
           onHomeClick={handleHomeClick}
           onUpgrade={() => setPricingOpen(true)}
         />
-        <ResizablePanelGroup orientation="horizontal">
-          <ResizablePanel
-            panelRef={featurePanelRef}
-            defaultSize="20"
-            minSize="15"
-            maxSize="40"
-            collapsible
-            collapsedSize="0"
-            onResize={(size) => {
-              if (size.asPercentage === 0) setActivePanel(null);
-            }}
-          >
-            <PanelContent activePanel={activePanel} onUpgrade={() => setPricingOpen(true)} />
-          </ResizablePanel>
-          <ResizableHandle />
-          <ResizablePanel defaultSize="80" minSize="50">
-            {isSettingsRoute ? (
-              <main className="relative h-full overflow-hidden">
-                {children}
-              </main>
-            ) : showHome ? (
-              <HomeView
-                onClose={() => setShowHome(false)}
-                onPanelChange={handlePanelChange}
-                onCreateProject={() => setCreateDialogOpen(true)}
-              />
-            ) : (
-              <CollaborationProvider>
+        <CollaborationProvider>
+          <ResizablePanelGroup orientation="horizontal">
+            <ResizablePanel
+              panelRef={featurePanelRef}
+              defaultSize="20"
+              minSize="15"
+              maxSize="40"
+              collapsible
+              collapsedSize="0"
+              onResize={(size) => {
+                if (size.asPercentage === 0) setActivePanel(null);
+              }}
+            >
+              <PanelContent activePanel={activePanel} onUpgrade={() => setPricingOpen(true)} />
+            </ResizablePanel>
+            <ResizableHandle />
+            <ResizablePanel defaultSize="80" minSize="50">
+              {isSettingsRoute ? (
                 <main className="relative h-full overflow-hidden">
                   {children}
                 </main>
-              </CollaborationProvider>
-            )}
-          </ResizablePanel>
-        </ResizablePanelGroup>
+              ) : showHome ? (
+                <HomeView
+                  onClose={() => setShowHome(false)}
+                  onPanelChange={handlePanelChange}
+                  onCreateProject={() => setCreateDialogOpen(true)}
+                />
+              ) : (
+                <main className="relative h-full overflow-hidden">
+                  {children}
+                </main>
+              )}
+            </ResizablePanel>
+          </ResizablePanelGroup>
+        </CollaborationProvider>
       </div>
       <CreateProjectDialog
         open={createDialogOpen}

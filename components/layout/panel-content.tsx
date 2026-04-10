@@ -13,8 +13,9 @@ import { GeoAIPanel } from "@/features/geoai/components/geoai-panel";
 import { DashboardBuilder } from "@/features/dashboard/components/dashboard-builder";
 import { ScriptingPanel } from "@/features/scripting/components/scripting-panel";
 import { useLayerStore } from "@/features/layers/store";
+import { useProjectStore } from "@/features/projects/store";
 import dynamic from "next/dynamic";
-import { Download, FileImage, FileJson, FileSpreadsheet, Lock, LogIn, Printer, Sparkles } from "lucide-react";
+import { Download, FileImage, FileJson, FileSpreadsheet, FolderOpen, Lock, LogIn, Printer, Sparkles, Users } from "lucide-react";
 
 const CollaborationPanel = dynamic(
   () =>
@@ -122,6 +123,7 @@ function ExportPanel() {
 
 export function PanelContent({ activePanel, onUpgrade }: PanelContentProps) {
   const layers = useLayerStore((s) => s.layers);
+  const activeProjectId = useProjectStore((s) => s.activeProject?.id);
   const { canAccess } = useUserPlan();
 
   if (!activePanel) return null;
@@ -164,6 +166,32 @@ export function PanelContent({ activePanel, onUpgrade }: PanelContentProps) {
     case "export":
       return <ExportPanel />;
     case "collaboration":
+      if (!activeProjectId) {
+        return (
+          <div className="flex h-full w-full flex-col items-center justify-center gap-4 bg-background p-6 text-center">
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
+              <Users className="h-6 w-6 text-primary" />
+            </div>
+            <div className="space-y-1">
+              <h3 className="text-sm font-semibold">No Project Open</h3>
+              <p className="text-xs text-muted-foreground">
+                Open or create a project to start collaborating with your team.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                const homeBtn = document.querySelector<HTMLButtonElement>("[data-panel='home']");
+                homeBtn?.click();
+              }}
+              className="inline-flex items-center gap-1.5 rounded-md bg-primary px-4 py-2 text-xs font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+            >
+              <FolderOpen className="h-3.5 w-3.5" />
+              Open a project
+            </button>
+          </div>
+        );
+      }
       return <CollaborationPanel />;
     default:
       return null;

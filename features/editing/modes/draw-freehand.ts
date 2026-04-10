@@ -1,4 +1,5 @@
-// MapboxDraw custom mode — `this` is bound by MapboxDraw at runtime
+import { useEditingStore } from "../store";
+
 // biome-ignore lint: MapboxDraw mode context requires any
 const DrawFreehand: any = {
   onSetup() {
@@ -9,7 +10,7 @@ const DrawFreehand: any = {
     });
     this.addFeature(line);
     this.setActionableState({ trash: true, combineFeatures: false, uncombineFeatures: false });
-    return { line, drawing: false, coords: [] as [number, number][] };
+    return { line, drawing: false, completed: false, coords: [] as [number, number][] };
   },
 
   onMouseDown(state: any, e: any) {
@@ -35,17 +36,23 @@ const DrawFreehand: any = {
       this.changeMode("simple_select");
       return;
     }
+    state.completed = true;
     this.map.fire("draw.create", { features: [state.line.toGeoJSON()] });
     this.changeMode("simple_select");
   },
 
-  onStop() {
+  onStop(state: any) {
     this.map.dragPan.enable();
+    if (!state.completed) {
+      try { this.deleteFeature(String(state.line.id), { silent: true }); } catch {}
+    }
+    const s = useEditingStore.getState();
+    if (s.drawMode === "draw_freehand") s.setDrawMode(null);
   },
 
-  onKeyUp(_state: any, e: any) {
+  onKeyUp(state: any, e: any) {
     if (e.key === "Escape") {
-      this.deleteFeature(String(_state.line.id), { silent: true });
+      this.deleteFeature(String(state.line.id), { silent: true });
       this.changeMode("simple_select");
     }
   },

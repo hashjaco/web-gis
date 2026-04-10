@@ -1,4 +1,5 @@
-// MapboxDraw custom mode — places a Point with _isMarker: true
+import { useEditingStore } from "../store";
+
 // biome-ignore lint: MapboxDraw mode context requires any
 const DrawMarker: any = {
   onSetup() {
@@ -25,6 +26,11 @@ const DrawMarker: any = {
 
   onTrash() {
     this.changeMode("simple_select");
+  },
+
+  onStop() {
+    const s = useEditingStore.getState();
+    if (s.drawMode === "draw_marker") s.setDrawMode(null);
   },
 
   toDisplayFeatures(_state: any, geojson: any, display: any) {

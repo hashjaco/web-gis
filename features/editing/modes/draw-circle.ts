@@ -1,6 +1,6 @@
 import * as turf from "@turf/turf";
+import { useEditingStore } from "../store";
 
-// MapboxDraw custom mode — `this` is bound by MapboxDraw at runtime
 // biome-ignore lint: MapboxDraw mode context requires any
 const DrawCircle: any = {
   onSetup() {
@@ -11,7 +11,7 @@ const DrawCircle: any = {
     });
     this.addFeature(circle);
     this.setActionableState({ trash: true, combineFeatures: false, uncombineFeatures: false });
-    return { circle, center: null as [number, number] | null };
+    return { circle, center: null as [number, number] | null, completed: false };
   },
 
   onClick(state: any, e: any) {
@@ -27,6 +27,7 @@ const DrawCircle: any = {
       state.circle.setCoordinates(circleGeo.geometry.coordinates);
       state.circle.properties.center = state.center;
       state.circle.properties.radiusKm = radius;
+      state.completed = true;
       this.map.fire("draw.create", { features: [state.circle.toGeoJSON()] });
       this.changeMode("simple_select");
     }
@@ -43,9 +44,9 @@ const DrawCircle: any = {
     state.circle.setCoordinates(circleGeo.geometry.coordinates);
   },
 
-  onKeyUp(_state: any, e: any) {
+  onKeyUp(state: any, e: any) {
     if (e.key === "Escape") {
-      this.deleteFeature(String(_state.circle.id), { silent: true });
+      this.deleteFeature(String(state.circle.id), { silent: true });
       this.changeMode("simple_select");
     }
   },
@@ -55,8 +56,20 @@ const DrawCircle: any = {
     this.changeMode("simple_select");
   },
 
+  onStop(state: any) {
+    if (!state.completed) {
+      try { this.deleteFeature(String(state.circle.id), { silent: true }); } catch {}
+    }
+    const s = useEditingStore.getState();
+    if (s.drawMode === "draw_circle") s.setDrawMode(null);
+  },
+
   toDisplayFeatures(state: any, geojson: any, display: any) {
-    if (geojson.geometry?.coordinates?.[0]?.length > 1) {
+    if (geojson.properties?.id === state.circle.id) {
+      if (geojson.geometry?.coordinates?.[0]?.length > 1) {
+        display(geojson);
+      }
+    } else {
       display(geojson);
     }
     if (state.center) {

@@ -41,6 +41,9 @@ export function useSaveProject() {
         projectId ?? useProjectStore.getState().activeProject?.id;
       if (!id) throw new Error("No active project to save");
 
+      // #region agent log
+      fetch('http://127.0.0.1:7897/ingest/62820f91-a5c2-4d7a-9a0a-e64d00b67289',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'38ed0f'},body:JSON.stringify({sessionId:'38ed0f',location:'use-project-mutations.ts:save',message:'useSaveProject called',data:{projectId,resolvedId:id,activeProject:useProjectStore.getState().activeProject},timestamp:Date.now(),hypothesisId:'H4'})}).catch(()=>{});
+      // #endregion
       useProjectStore.getState().markSaving();
       const state = await captureProjectState();
       return apiFetch<ProjectRecord>(`/api/projects/${id}`, {
