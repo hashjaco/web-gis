@@ -1,10 +1,6 @@
 import { sql } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { resolveOrg } from "./resolve-org";
-// #region agent log
-import { appendFileSync } from "fs";
-const _dbg = (msg: string, data: Record<string, unknown>) => { try { appendFileSync('/Users/hashim/Projects/gis-web/.cursor/debug-38ed0f.log', JSON.stringify({sessionId:'38ed0f',location:'lib/auth/authorize-project.ts',message:msg,data,timestamp:Date.now()}) + '\n'); } catch {} };
-// #endregion
 
 interface ProjectRow {
   id: string;
@@ -36,10 +32,6 @@ export async function authorizeProject(
   const rows = (await db.execute(
     sql`SELECT id, owner_id, org_id, is_public, state FROM projects WHERE id = ${projectId}`,
   )) as unknown as ProjectRow[];
-
-  // #region agent log
-  _dbg('authorize-query-result', {projectId, userId, mode, rowCount: rows.length, isArray: Array.isArray(rows), rawType: typeof rows, hasRows: rows?.length > 0, firstRowOwnerId: rows?.[0]?.owner_id});
-  // #endregion
 
   if (rows.length === 0) return null;
 

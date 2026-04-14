@@ -8,10 +8,6 @@ import { checkQuota } from "@/lib/auth/check-quota";
 import { parseBody } from "@/lib/validation/parse";
 import { createFeatureSchema } from "@/lib/validation/schemas";
 import { writeAuditLog } from "@/lib/audit/log";
-// #region agent log
-import { appendFileSync } from "fs";
-const _dbg = (msg: string, data: Record<string, unknown>) => { try { appendFileSync('/Users/hashim/Projects/gis-web/.cursor/debug-38ed0f.log', JSON.stringify({sessionId:'38ed0f',location:'api/features/route.ts',message:msg,data,timestamp:Date.now()}) + '\n'); } catch {} };
-// #endregion
 
 export async function GET(request: Request) {
   const { userId } = await auth();
@@ -86,30 +82,15 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  // #region agent log
-  _dbg('POST-entry', {url: request.url});
-  // #endregion
   const { userId } = await auth();
   if (!userId)
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const parsed = await parseBody(request, createFeatureSchema);
-  if (parsed.error) {
-    // #region agent log
-    _dbg('POST-parse-error', {userId});
-    // #endregion
-    return parsed.error;
-  }
+  if (parsed.error) return parsed.error;
   const { geometry, properties, layer, projectId } = parsed.data;
 
-  // #region agent log
-  _dbg('POST-pre-authorize', {userId, projectId, layer, hasGeometry: !!geometry});
-  // #endregion
-
   const project = await authorizeProject(userId, projectId, "write");
-  // #region agent log
-  _dbg('POST-post-authorize', {projectFound: !!project, projectId, userId});
-  // #endregion
   if (!project)
     return NextResponse.json({ error: "Not found" }, { status: 404 });
 
