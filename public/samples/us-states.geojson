@@ -1,0 +1,15 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {"type":"Feature","geometry":{"type":"Polygon","coordinates":[[[-87.36,35],[-84.85,35],[-84.85,36.6],[-87.36,36.6],[-87.36,35]]]},"properties":{"name":"Tennessee","abbr":"TN","population":7051339,"area_sq_mi":42143}},
+    {"type":"Feature","geometry":{"type":"Polygon","coordinates":[[[-104.05,37],[-102,37],[-102,41],[-104.05,41],[-104.05,37]]]},"properties":{"name":"Colorado","abbr":"CO","population":5893634,"area_sq_mi":104094}},
+    {"type":"Feature","geometry":{"type":"Polygon","coordinates":[[[-75.56,38.45],[-75,38.45],[-75,39.84],[-75.79,39.84],[-75.79,39.72],[-75.56,38.45]]]},"properties":{"name":"Delaware","abbr":"DE","population":1003384,"area_sq_mi":1954}},
+    {"type":"Feature","geometry":{"type":"Polygon","coordinates":[[[-87.63,24.52],[-80.03,24.52],[-80.03,31.0],[-87.63,31.0],[-87.63,24.52]]]},"properties":{"name":"Florida","abbr":"FL","population":22244823,"area_sq_mi":53625}},
+    {"type":"Feature","geometry":{"type":"Polygon","coordinates":[[[-84.32,30.36],[-80.84,30.36],[-80.84,35],[-84.32,35],[-84.32,30.36]]]},"properties":{"name":"Georgia","abbr":"GA","population":10912876,"area_sq_mi":57513}},
+    {"type":"Feature","geometry":{"type":"Polygon","coordinates":[[[-91.51,36.97],[-89.1,36.97],[-89.1,42.5],[-91.51,42.5],[-91.51,36.97]]]},"properties":{"name":"Illinois","abbr":"IL","population":12582032,"area_sq_mi":55519}},
+    {"type":"Feature","geometry":{"type":"Polygon","coordinates":[[[-80.52,39.72],[-74.69,39.72],[-74.69,42.27],[-80.52,42.27],[-80.52,39.72]]]},"properties":{"name":"Pennsylvania","abbr":"PA","population":12964056,"area_sq_mi":44743}},
+    {"type":"Feature","geometry":{"type":"Polygon","coordinates":[[[-106.65,25.84],[-93.51,25.84],[-93.51,36.5],[-106.65,36.5],[-106.65,25.84]]]},"properties":{"name":"Texas","abbr":"TX","population":30029572,"area_sq_mi":261232}},
+    {"type":"Feature","geometry":{"type":"Polygon","coordinates":[[[-124.57,32.53],[-114.13,32.53],[-114.13,42],[-124.57,42],[-124.57,32.53]]]},"properties":{"name":"California","abbr":"CA","population":39538223,"area_sq_mi":155959}},
+    {"type":"Feature","geometry":{"type":"Polygon","coordinates":[[[-79.76,33.84],[-74,40.5],[-74,41],[-79.76,41],[-79.76,33.84]]]},"properties":{"name":"New York","abbr":"NY","population":20201249,"area_sq_mi":47126}}
+  ]
+}

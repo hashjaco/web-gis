@@ -12,6 +12,7 @@ import { WorkflowPanel } from "@/features/workflows/components/workflow-panel";
 import { GeoAIPanel } from "@/features/geoai/components/geoai-panel";
 import { DashboardBuilder } from "@/features/dashboard/components/dashboard-builder";
 import { ScriptingPanel } from "@/features/scripting/components/scripting-panel";
+import { LearnPanel } from "@/features/learn/components/learn-panel";
 import { useLayerStore } from "@/features/layers/store";
 import { useProjectStore } from "@/features/projects/store";
 import dynamic from "next/dynamic";
@@ -36,9 +37,12 @@ interface PanelContentProps {
 }
 
 function UpgradeUpsell({ feature, onUpgrade }: { feature: string; onUpgrade?: () => void }) {
-  const { isGuest } = useUserPlan();
+  const { isGuest, plan } = useUserPlan();
   const required = FEATURE_PLAN_REQUIREMENTS[feature] ?? "free";
   const needsAccount = isGuest && required === "free";
+  const needsEdu = required === "edu" && plan === "free";
+
+  const tierLabel = required === "edu" ? "Student (Edu) or Pro" : "Pro";
 
   return (
     <div className="flex h-full w-full flex-col items-center justify-center gap-4 bg-background p-6 text-center">
@@ -47,7 +51,7 @@ function UpgradeUpsell({ feature, onUpgrade }: { feature: string; onUpgrade?: ()
       </div>
       <div className="space-y-1">
         <h3 className="text-sm font-semibold">
-          {needsAccount ? "Account Required" : "Pro Feature"}
+          {needsAccount ? "Account Required" : `${tierLabel} Feature`}
         </h3>
         <p className="text-xs text-muted-foreground">
           {needsAccount ? (
@@ -55,10 +59,16 @@ function UpgradeUpsell({ feature, onUpgrade }: { feature: string; onUpgrade?: ()
               <span className="font-medium capitalize">{feature}</span> requires
               a free account. Sign up to unlock this feature.
             </>
+          ) : needsEdu ? (
+            <>
+              <span className="font-medium capitalize">{feature}</span> is
+              available on the Student ($10/mo) and Pro plans. Verify your .edu
+              email to get started.
+            </>
           ) : (
             <>
               <span className="font-medium capitalize">{feature}</span> is
-              available on the Pro plan. Upgrade to unlock advanced GIS
+              available on the {tierLabel} plan. Upgrade to unlock advanced GIS
               capabilities.
             </>
           )}
@@ -79,7 +89,7 @@ function UpgradeUpsell({ feature, onUpgrade }: { feature: string; onUpgrade?: ()
           className="inline-flex items-center gap-1.5 rounded-md bg-primary px-4 py-2 text-xs font-medium text-primary-foreground transition-colors hover:bg-primary/90"
         >
           <Sparkles className="h-3.5 w-3.5" />
-          Upgrade to Pro
+          {needsEdu ? "Start Student Plan" : "Upgrade to Pro"}
         </button>
       )}
     </div>
@@ -165,6 +175,8 @@ export function PanelContent({ activePanel, onUpgrade }: PanelContentProps) {
       return <MediaPanel />;
     case "export":
       return <ExportPanel />;
+    case "learn":
+      return <LearnPanel />;
     case "collaboration":
       if (!activeProjectId) {
         return (

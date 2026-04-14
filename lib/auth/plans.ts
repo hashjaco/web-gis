@@ -1,18 +1,22 @@
 export type UserPlan =
   | "guest"
   | "free"
+  | "edu"
   | "pro"
   | "team"
+  | "classroom"
   | "enterprise"
   | "admin";
 
 export const PLAN_HIERARCHY: Record<UserPlan, number> = {
   guest: 0,
   free: 1,
-  pro: 2,
-  team: 3,
-  enterprise: 4,
-  admin: 5,
+  edu: 2,
+  pro: 3,
+  team: 4,
+  classroom: 4,
+  enterprise: 5,
+  admin: 6,
 };
 
 export const FEATURE_PLAN_REQUIREMENTS: Record<string, UserPlan> = {
@@ -21,9 +25,10 @@ export const FEATURE_PLAN_REQUIREMENTS: Record<string, UserPlan> = {
   editing: "guest",
   import: "guest",
   routing: "guest",
+  learn: "guest",
   export: "free",
-  analysis: "pro",
-  visualization: "pro",
+  analysis: "edu",
+  visualization: "edu",
   imagery: "pro",
   geoai: "pro",
   workflows: "pro",
@@ -52,6 +57,7 @@ export function normalizeAddOns(value: unknown): AddOn[] {
 /** Accept legacy "standard" values and normalize to "free". */
 export function normalizePlan(value: unknown): UserPlan {
   if (value === "standard") return "free";
+  if (value === "student") return "edu";
   if (typeof value === "string" && value in PLAN_HIERARCHY) {
     return value as UserPlan;
   }

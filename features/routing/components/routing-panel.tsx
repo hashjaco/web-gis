@@ -4,6 +4,7 @@ import { ArrowDownUp, Crosshair, Info, Lock, Loader2, Route, Search, X } from "l
 import { useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { HelpTooltip } from "@/components/ui/help-tooltip";
 import { apiFetch } from "@/lib/api/client";
 import { useUserPlan } from "@/lib/auth/use-user-plan";
 import { useRoute } from "../hooks/use-route";
@@ -226,15 +227,13 @@ export function RoutingPanel() {
     <div className="flex h-full w-full flex-col bg-background">
       <div className="flex items-center gap-2 border-b px-3 py-2">
         <Route className="h-4 w-4" />
-        <h2 className="text-sm font-semibold">Routing</h2>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Info className="ml-auto h-3.5 w-3.5 cursor-help text-muted-foreground" />
-          </TooltipTrigger>
-          <TooltipContent side="bottom" className="max-w-56">
-            Calculate routes between two points using OSRM. Enter coordinates, search a location, or click on the map.
-          </TooltipContent>
-        </Tooltip>
+        <h2 className="text-sm font-semibold">Directions</h2>
+        <HelpTooltip
+          title="Directions & Routing"
+          description="Find the best route between two places. Enter coordinates, search for locations, or click directly on the map to set your start and end points."
+          arcgisEquivalent="Network Analyst / Directions"
+          className="ml-auto"
+        />
       </div>
 
       <div className="space-y-3 p-3">

@@ -24,15 +24,33 @@ export function LegendPanel() {
       <div className="space-y-1.5">
         {visibleLayers.map((layer) => {
           const style = (layer.style ?? {}) as Record<string, unknown>;
+          const layerType = (style.type as string) ?? "fill";
           const paint = (style.paint ?? {}) as Record<string, unknown>;
-          const color = (paint["fill-color"] as string) ?? "#088";
+          const color =
+            ((paint["fill-color"] ??
+              paint["circle-color"] ??
+              paint["line-color"]) as string) ?? "#088";
+          const isCircle = layerType === "circle";
+          const isLine = layerType === "line";
 
           return (
             <div key={layer.id} className="flex items-center gap-2">
-              <div
-                className="h-3 w-4 rounded-sm border"
-                style={{ backgroundColor: color, opacity: layer.opacity / 100 }}
-              />
+              {isCircle ? (
+                <div
+                  className="h-3 w-3 rounded-full border"
+                  style={{ backgroundColor: color, opacity: layer.opacity / 100 }}
+                />
+              ) : isLine ? (
+                <div
+                  className="h-0.5 w-4 rounded-full"
+                  style={{ backgroundColor: color, opacity: layer.opacity / 100 }}
+                />
+              ) : (
+                <div
+                  className="h-3 w-4 rounded-sm border"
+                  style={{ backgroundColor: color, opacity: layer.opacity / 100 }}
+                />
+              )}
               <span className="text-xs">{layer.name}</span>
             </div>
           );

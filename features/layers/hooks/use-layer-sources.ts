@@ -20,14 +20,14 @@ export function useLayerSources() {
 
     for (const ml of map.getStyle()?.layers ?? []) {
       if (!ml.id.startsWith("layer-")) continue;
-      const match = ml.id.match(/^layer-(.+?)-(fill|line|labels)$/);
+      const match = ml.id.match(/^layer-(.+?)-(fill|line|circle|labels)$/);
       if (!match) continue;
       const id = match[1];
       if (!currentIds.has(id)) removedIds.add(id);
     }
 
     for (const id of removedIds) {
-      for (const suffix of ["-fill", "-line", "-labels"]) {
+      for (const suffix of ["-fill", "-line", "-circle", "-labels"]) {
         if (map.getLayer(`layer-${id}${suffix}`)) {
           map.removeLayer(`layer-${id}${suffix}`);
         }
@@ -39,27 +39,40 @@ export function useLayerSources() {
 
     for (const layer of layers) {
       const sourceId = `layer-${layer.id}`;
-      const layerId = `layer-${layer.id}-fill`;
+      const isGeoJson = layer.sourceType === "geojson" && layer.data;
 
       if (!map.getSource(sourceId)) {
-        map.addSource(sourceId, {
-          type: "vector",
-          tiles: [`${MARTIN_URL}/${layer.name}/{z}/{x}/{y}.pbf`],
-        });
+        if (isGeoJson) {
+          map.addSource(sourceId, {
+            type: "geojson",
+            data: layer.data as GeoJSON.GeoJSON,
+          });
+        } else {
+          map.addSource(sourceId, {
+            type: "vector",
+            tiles: [`${MARTIN_URL}/${layer.name}/{z}/{x}/{y}.pbf`],
+          });
+        }
       }
 
+      const style = (layer.style ?? {}) as Record<string, unknown>;
+      const layerType = ((style.type as string) ?? "fill") as "fill";
+      const layerId = `layer-${layer.id}-${layerType}`;
+
       if (!map.getLayer(layerId)) {
-        const style = (layer.style ?? {}) as Record<string, unknown>;
-        map.addLayer({
+        const spec: Record<string, unknown> = {
           id: layerId,
-          type: ((style.type as string) ?? "fill") as "fill",
+          type: layerType,
           source: sourceId,
-          "source-layer": layer.name,
           paint: (style.paint as Record<string, unknown>) ?? {
             "fill-color": "#088",
             "fill-opacity": 0.6,
           },
-        });
+        };
+        if (!isGeoJson) {
+          spec["source-layer"] = layer.name;
+        }
+        map.addLayer(spec as maplibregl.AddLayerObject);
       }
 
       const currentLayer = map.getLayer(layerId);
@@ -69,9 +82,13 @@ export function useLayerSources() {
           "visibility",
           layer.isVisible ? "visible" : "none",
         );
-        if (currentLayer.type === "fill") {
-          map.setPaintProperty(layerId, "fill-opacity", layer.opacity / 100);
-        }
+        const opacityProp =
+          layerType === "circle"
+            ? "circle-opacity"
+            : layerType === "line"
+              ? "line-opacity"
+              : "fill-opacity";
+        map.setPaintProperty(layerId, opacityProp, layer.opacity / 100);
       }
     }
   }, [map, layers]);

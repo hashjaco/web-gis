@@ -20,10 +20,7 @@ export async function GET(request: Request) {
   }
 
   if (!userId) {
-    const rows = await db.execute(
-      sql`SELECT * FROM projects WHERE is_public = true ORDER BY updated_at DESC`,
-    );
-    return NextResponse.json(rows);
+    return NextResponse.json([]);
   }
 
   let query;

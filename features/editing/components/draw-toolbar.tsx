@@ -48,7 +48,7 @@ export function DrawToolbar({ drawMode, annotationMode, onModeChange, onAnnotati
   const { isPro } = useUserPlan();
 
   return (
-    <div className="absolute top-4 left-4 z-10 flex flex-col gap-1 rounded-lg border bg-background/90 p-1 shadow-sm backdrop-blur-sm">
+    <div data-tour="draw-toolbar" className="absolute top-4 left-4 z-10 flex flex-col gap-1 rounded-lg border bg-background/90 p-1 shadow-sm backdrop-blur-sm">
       {basicTools.map((tool) => (
         <Tooltip key={tool.mode}>
           <TooltipTrigger asChild>

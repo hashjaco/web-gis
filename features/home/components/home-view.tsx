@@ -5,6 +5,7 @@ import {
   CheckCircle2,
   Clock,
   FileUp,
+  FlaskConical,
   FolderPlus,
   Layers,
   Map,
@@ -23,6 +24,7 @@ import { useLayerStore } from "@/features/layers/store";
 import { useProjectStore } from "@/features/projects/store";
 import { useDeleteProject } from "@/features/projects/hooks/use-project-mutations";
 import { hydrateProjectState } from "@/features/projects/lib/project-state";
+import { SampleDataSection } from "@/features/samples/components/sample-data-section";
 import { useProjects, type ProjectRecord } from "../hooks/use-projects";
 import type { LayerConfig } from "@/features/layers/types";
 
@@ -30,6 +32,7 @@ interface HomeViewProps {
   onClose: () => void;
   onPanelChange?: (panel: string) => void;
   onCreateProject?: () => void;
+  onStartSandbox?: () => void;
 }
 
 function formatRelativeTime(dateString: string): string {
@@ -343,6 +346,7 @@ export function HomeView({
   onClose,
   onPanelChange,
   onCreateProject,
+  onStartSandbox,
 }: HomeViewProps) {
   const { data: projects, isLoading: loadingProjects } = useProjects();
   const projectId = useProjectStore((s) => s.activeProject?.id);
@@ -431,13 +435,26 @@ export function HomeView({
             <FolderPlus className="h-4 w-4 text-muted-foreground" />
             Create Project
           </button>
+          {onStartSandbox && (
+            <button
+              type="button"
+              onClick={() => {
+                onStartSandbox();
+                onClose();
+              }}
+              className="inline-flex items-center gap-2 rounded-lg border border-primary/30 bg-primary/5 px-4 py-2.5 text-sm font-medium text-primary transition-colors hover:bg-primary/10"
+            >
+              <FlaskConical className="h-4 w-4" />
+              Try Sandbox
+            </button>
+          )}
         </div>
 
         {!loadingProjects &&
           !loadingLayers &&
           recentProjects.length === 0 &&
           recentLayers.length === 0 && (
-            <div className="mt-8">
+            <div className="mt-8 space-y-8">
               <GettingStarted
                 onAction={(action) => {
                   if (action === "create-project") {
@@ -448,6 +465,9 @@ export function HomeView({
                   }
                 }}
               />
+              <div className="rounded-xl border bg-card p-6">
+                <SampleDataSection onLoaded={onClose} />
+              </div>
             </div>
           )}
 

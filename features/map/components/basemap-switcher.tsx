@@ -10,7 +10,7 @@ export function BasemapSwitcher() {
   const setActiveBasemap = useMapStore((s) => s.setActiveBasemap);
 
   return (
-    <div className="absolute bottom-6 right-4 z-10 flex gap-1 rounded-lg border bg-background/90 p-1 shadow-sm backdrop-blur-sm">
+    <div data-tour="basemap" className="absolute bottom-6 right-4 z-10 flex gap-1 rounded-lg border bg-background/90 p-1 shadow-sm backdrop-blur-sm">
       {basemapStyles.map((style) => (
         <Tooltip key={style.id}>
           <TooltipTrigger asChild>

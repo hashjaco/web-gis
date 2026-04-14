@@ -1,0 +1,20 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {"type":"Feature","geometry":{"type":"Point","coordinates":[-118.49,34.02]},"properties":{"magnitude":4.2,"depth_km":10,"place":"Los Angeles, CA","time":"2025-01-15T08:23:00Z"}},
+    {"type":"Feature","geometry":{"type":"Point","coordinates":[142.37,38.32]},"properties":{"magnitude":7.1,"depth_km":32,"place":"Sendai, Japan","time":"2025-02-03T14:46:00Z"}},
+    {"type":"Feature","geometry":{"type":"Point","coordinates":[-71.54,-33.04]},"properties":{"magnitude":6.4,"depth_km":48,"place":"Valparaiso, Chile","time":"2025-02-20T22:14:00Z"}},
+    {"type":"Feature","geometry":{"type":"Point","coordinates":[29.1,40.74]},"properties":{"magnitude":5.8,"depth_km":12,"place":"Istanbul, Turkey","time":"2025-03-05T03:18:00Z"}},
+    {"type":"Feature","geometry":{"type":"Point","coordinates":[73.05,33.72]},"properties":{"magnitude":5.2,"depth_km":15,"place":"Islamabad, Pakistan","time":"2025-03-12T11:30:00Z"}},
+    {"type":"Feature","geometry":{"type":"Point","coordinates":[-155.27,19.42]},"properties":{"magnitude":4.7,"depth_km":8,"place":"Hawaii, USA","time":"2025-03-28T16:45:00Z"}},
+    {"type":"Feature","geometry":{"type":"Point","coordinates":[121.17,14.68]},"properties":{"magnitude":6.2,"depth_km":35,"place":"Manila, Philippines","time":"2025-04-02T09:12:00Z"}},
+    {"type":"Feature","geometry":{"type":"Point","coordinates":[46.72,24.71]},"properties":{"magnitude":3.9,"depth_km":5,"place":"Riyadh, Saudi Arabia","time":"2025-04-10T20:05:00Z"}},
+    {"type":"Feature","geometry":{"type":"Point","coordinates":[-122.42,37.77]},"properties":{"magnitude":3.5,"depth_km":7,"place":"San Francisco, CA","time":"2025-04-18T04:33:00Z"}},
+    {"type":"Feature","geometry":{"type":"Point","coordinates":[12.49,41.9]},"properties":{"magnitude":4.1,"depth_km":18,"place":"Rome, Italy","time":"2025-05-01T13:22:00Z"}},
+    {"type":"Feature","geometry":{"type":"Point","coordinates":[103.85,1.35]},"properties":{"magnitude":3.2,"depth_km":20,"place":"Singapore","time":"2025-05-14T07:50:00Z"}},
+    {"type":"Feature","geometry":{"type":"Point","coordinates":[-87.63,41.88]},"properties":{"magnitude":3.8,"depth_km":6,"place":"Chicago, IL","time":"2025-05-22T18:10:00Z"}},
+    {"type":"Feature","geometry":{"type":"Point","coordinates":[174.77,-41.29]},"properties":{"magnitude":5.5,"depth_km":25,"place":"Wellington, New Zealand","time":"2025-06-03T02:45:00Z"}},
+    {"type":"Feature","geometry":{"type":"Point","coordinates":[-16.27,28.46]},"properties":{"magnitude":4.8,"depth_km":14,"place":"Tenerife, Spain","time":"2025-06-15T21:30:00Z"}},
+    {"type":"Feature","geometry":{"type":"Point","coordinates":[139.77,35.68]},"properties":{"magnitude":5.1,"depth_km":40,"place":"Tokyo, Japan","time":"2025-07-01T10:15:00Z"}}
+  ]
+}

@@ -169,6 +169,10 @@ function FlyToHandler() {
 
 export function MapContainer({ deckLayers = [] }: MapContainerProps) {
   const mapRef = useRef<MapRef>(null);
+  const [containerReady, setContainerReady] = useState(false);
+  const containerCallbackRef = (node: HTMLDivElement | null) => {
+    setContainerReady(!!node);
+  };
   const { viewState, onMove } = useViewport();
   const activeBasemap = useMapStore((s) => s.activeBasemap);
   const drawMode = useEditingStore((s) => s.drawMode);
@@ -244,27 +248,29 @@ export function MapContainer({ deckLayers = [] }: MapContainerProps) {
 
   return (
     <MapRefContext value={mapRef}>
-      <div className={`relative h-full w-full${isDrawing || isPicking || isAnnotating ? " drawing-active" : ""}`}>
-        <Map
-          ref={mapRef}
-          {...viewState}
-          onMove={onMove}
-          onClick={handleClick}
-          cursor={isDrawing || isPicking || isAnnotating ? "crosshair" : ""}
-          mapStyle={getBasemapUrl(activeBasemap)}
-          renderWorldCopies={false}
-          minZoom={1}
-          style={{ width: "100%", height: "100%" }}
-        >
-          <MapControls />
-          <DeckOverlay layers={[...deckLayers, ...collabLayers]} />
-          <DrawController />
-          <TerrainAndBuildings />
-          <ImageryLayerController />
-          <AnnotationPlacer />
-          <ImageOverlay layers={visibleLayerIds} />
-          <FlyToHandler />
-        </Map>
+      <div ref={containerCallbackRef} data-tour="map" className={`relative h-full w-full${isDrawing || isPicking || isAnnotating ? " drawing-active" : ""}`}>
+        {containerReady && (
+          <Map
+            ref={mapRef}
+            {...viewState}
+            onMove={onMove}
+            onClick={handleClick}
+            cursor={isDrawing || isPicking || isAnnotating ? "crosshair" : ""}
+            mapStyle={getBasemapUrl(activeBasemap)}
+            renderWorldCopies={false}
+            minZoom={1}
+            style={{ width: "100%", height: "100%" }}
+          >
+            <MapControls />
+            <DeckOverlay layers={[...deckLayers, ...collabLayers]} />
+            <DrawController />
+            <TerrainAndBuildings />
+            <ImageryLayerController />
+            <AnnotationPlacer />
+            <ImageOverlay layers={visibleLayerIds} />
+            <FlyToHandler />
+          </Map>
+        )}
         {isCollabActive && (
           <CollaborationController onCursorLayers={setCollabLayers} />
         )}

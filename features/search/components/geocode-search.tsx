@@ -23,12 +23,12 @@ export function GeocodeSearch() {
   };
 
   return (
-    <div className="relative">
+    <div className="relative" data-tour="search">
       <div className="flex items-center gap-2 rounded-md border bg-background px-2 py-1.5">
         <Search className="h-3.5 w-3.5 text-muted-foreground" />
         <input
           type="text"
-          placeholder="Search places..."
+          placeholder="Search for a place..."
           value={query}
           onChange={(e) => {
             setQuery(e.target.value);

@@ -1,8 +1,9 @@
 "use client";
 
-import { Info, Layers, Plus } from "lucide-react";
+import { Layers, Plus } from "lucide-react";
 import { useState } from "react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { HelpTooltip } from "@/components/ui/help-tooltip";
 import { useLayers } from "../hooks/use-layers";
 import { getDefaultStyle } from "../palette";
 import { useLayerStore } from "../store";
@@ -22,14 +23,11 @@ export function LayerPanel() {
         <div className="flex items-center gap-2">
           <Layers className="h-4 w-4" />
           <h2 className="text-sm font-semibold">Layers</h2>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Info className="h-3.5 w-3.5 cursor-help text-muted-foreground" />
-            </TooltipTrigger>
-            <TooltipContent side="bottom" className="max-w-56">
-              Manage vector data layers. Click a layer to select it for editing. Toggle visibility and adjust opacity.
-            </TooltipContent>
-          </Tooltip>
+          <HelpTooltip
+            title="Layers"
+            description="Layers are stacked collections of map data. Each layer contains features (points, lines, or polygons) that you can style, show/hide, and edit independently. Think of them like transparent sheets stacked on top of each other."
+            arcgisEquivalent="Table of Contents / Layer List"
+          />
         </div>
         <div className="flex items-center gap-2">
           <span className="text-xs text-muted-foreground">
@@ -61,9 +59,16 @@ export function LayerPanel() {
 
       <div className="flex-1 space-y-1 overflow-y-auto p-2">
         {layers.length === 0 ? (
-          <p className="px-2 py-8 text-center text-xs text-muted-foreground">
-            No layers added yet
-          </p>
+          <div className="flex flex-col items-center gap-2 px-2 py-8 text-center">
+            <Layers className="h-8 w-8 text-muted-foreground/30" />
+            <p className="text-xs font-medium text-muted-foreground">
+              No layers yet
+            </p>
+            <p className="text-[11px] text-muted-foreground/70">
+              Layers hold your map data. Import a file or click + above to
+              create an empty layer and start drawing.
+            </p>
+          </div>
         ) : (
           layers.map((layer) => (
             <LayerItem

@@ -109,6 +109,7 @@ export function AppHeader({ onCreateProject }: AppHeaderProps) {
             <TooltipTrigger asChild>
               <button
                 type="button"
+                data-tour="save"
                 onClick={handleSave}
                 className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
               >
@@ -124,6 +125,7 @@ export function AppHeader({ onCreateProject }: AppHeaderProps) {
           <TooltipTrigger asChild>
             <button
               type="button"
+              data-tour="save"
               onClick={handleCopy}
               className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
             >

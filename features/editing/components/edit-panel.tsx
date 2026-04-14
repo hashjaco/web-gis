@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
+import { HelpTooltip } from "@/components/ui/help-tooltip";
 import { useLayerStore } from "@/features/layers/store";
 import { apiFetch } from "@/lib/api/client";
 import { useUserPlan } from "@/lib/auth/use-user-plan";
@@ -863,7 +864,12 @@ export function EditPanel() {
     <div className="flex h-full w-full flex-col bg-background">
       <div className="flex items-center gap-2 border-b px-3 py-2">
         <Pencil className="h-4 w-4" />
-        <h2 className="text-sm font-semibold">Edit</h2>
+        <h2 className="text-sm font-semibold">Draw & Edit</h2>
+        <HelpTooltip
+          title="Drawing & Editing"
+          description="Create and modify map features. Use the toolbar on the left side of the map to draw points, lines, polygons, circles, and rectangles. Click any feature to select it and edit its properties here."
+          arcgisEquivalent="Edit toolbar / Feature editing"
+        />
       </div>
       <div className="flex-1 overflow-y-auto">
         <Section title="Target Layer" icon={Target}>

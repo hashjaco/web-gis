@@ -22,6 +22,11 @@ import {
 import { useGuestPersistence } from "@/lib/guest/use-guest-persistence";
 import { GuestMigrationBanner } from "@/lib/guest/guest-migration-banner";
 import { CollaborationProvider } from "@/features/collaboration/components/collaboration-provider";
+import { FeatureTour } from "@/features/tour/components/feature-tour";
+import {
+  SandboxOverlay,
+  useSandboxMode,
+} from "@/features/sandbox/components/sandbox-overlay";
 import { useEditingStore } from "@/features/editing/store";
 
 export default function DashboardLayout({
@@ -40,6 +45,8 @@ export default function DashboardLayout({
   const isSettingsRoute = pathname.startsWith("/settings");
 
   const save = useSaveProject();
+
+  const sandbox = useSandboxMode();
 
   useAutoSave();
   useGuestPersistence();
@@ -118,6 +125,7 @@ export default function DashboardLayout({
                   onClose={() => setShowHome(false)}
                   onPanelChange={handlePanelChange}
                   onCreateProject={() => setCreateDialogOpen(true)}
+                  onStartSandbox={sandbox.startSandbox}
                 />
               ) : (
                 <main className="relative h-full overflow-hidden">
@@ -138,6 +146,8 @@ export default function DashboardLayout({
         onCreateProject={() => setCreateDialogOpen(true)}
       />
       <PricingModal open={pricingOpen} onClose={() => setPricingOpen(false)} />
+      <FeatureTour onRequestCloseHome={() => setShowHome(false)} />
+      {sandbox.active && <SandboxOverlay />}
       <KeyboardShortcuts
         onPanelChange={(panel) => {
           setActivePanel((current) => (current === panel ? null : panel));

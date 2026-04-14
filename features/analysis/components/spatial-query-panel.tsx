@@ -2,6 +2,7 @@
 
 import { BarChart3, Loader2 } from "lucide-react";
 import { useState } from "react";
+import { HelpTooltip } from "@/components/ui/help-tooltip";
 import { useAnalysis } from "../hooks/use-analysis";
 import { useClientAnalysis } from "../hooks/use-client-analysis";
 import type { AnalysisOperation, ClientAnalysisOperation } from "../types";
@@ -101,7 +102,12 @@ export function SpatialQueryPanel({ layers }: SpatialQueryPanelProps) {
     <div className="flex h-full w-full flex-col bg-background">
       <div className="flex items-center gap-2 border-b px-3 py-2">
         <BarChart3 className="h-4 w-4" />
-        <h2 className="text-sm font-semibold">Spatial Analysis</h2>
+        <h2 className="text-sm font-semibold">Analyze</h2>
+        <HelpTooltip
+          title="Spatial Analysis"
+          description="Run geographic calculations on your data. For example, create buffer zones around features, find where layers overlap, or cluster nearby points into groups."
+          arcgisEquivalent="Analysis tools / Geoprocessing"
+        />
       </div>
 
       <div className="flex-1 space-y-3 overflow-y-auto p-3">
@@ -118,12 +124,12 @@ export function SpatialQueryPanel({ layers }: SpatialQueryPanelProps) {
             onChange={(e) => setOperation(e.target.value as AllOperations)}
             className="w-full rounded border bg-background px-2 py-1.5 text-sm"
           >
-            <optgroup label="Server (PostGIS)">
+            <optgroup label="Server-side">
               {SERVER_OPERATIONS.map((op) => (
                 <option key={op.value} value={op.value}>{op.label}</option>
               ))}
             </optgroup>
-            <optgroup label="Client (Turf.js)">
+            <optgroup label="Browser-side">
               {CLIENT_OPERATIONS.map((op) => (
                 <option key={op.value} value={op.value}>{op.label}</option>
               ))}

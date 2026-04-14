@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { useEffect, useRef } from "react";
 import { cn } from "@/lib/utils";
+import { HelpTooltip } from "@/components/ui/help-tooltip";
 import { useLayerStore } from "@/features/layers/store";
 import { useVisualizationStore, type VisualizationType } from "../store";
 import { usePointCloud } from "../hooks/use-point-cloud";
@@ -44,7 +45,12 @@ export function VizPanel() {
     <div className="flex h-full w-full flex-col bg-background">
       <div className="flex items-center gap-2 border-b px-3 py-2">
         <BarChart3 className="h-4 w-4" />
-        <h2 className="text-sm font-semibold">Visualization</h2>
+        <h2 className="text-sm font-semibold">Visualize Data</h2>
+        <HelpTooltip
+          title="Data Visualization"
+          description="Transform your point data into visual patterns. Heatmaps show density, hex bins aggregate counts, arcs show flow, and scatterplots render individual points. Choose a layer and a style to see your data differently."
+          arcgisEquivalent="Change Style / Smart Mapping"
+        />
       </div>
 
       <div className="flex-1 space-y-3 overflow-y-auto p-3">
@@ -96,7 +102,8 @@ export function VizPanel() {
 
         {vizType !== "none" && !vizLayerId && (
           <p className="rounded bg-yellow-500/10 px-2 py-1.5 text-xs text-yellow-600 dark:text-yellow-400">
-            Select a data layer above to visualize
+            Choose a layer above first. Need data? Import a file or load a
+            sample dataset from the Import panel.
           </p>
         )}
 

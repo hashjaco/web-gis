@@ -4,12 +4,13 @@ import {
   FileUp,
   FileJson,
   FileSpreadsheet,
-  Info,
   Map as MapIcon,
   Loader2,
 } from "lucide-react";
 import { useRef, useState } from "react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { HelpTooltip } from "@/components/ui/help-tooltip";
+import { SampleDataSection } from "@/features/samples/components/sample-data-section";
 
 const SUPPORTED_FORMATS = [
   { ext: ".geojson,.json", label: "GeoJSON", icon: FileJson },
@@ -52,15 +53,12 @@ export function ImportPanelView({
       <div className="flex items-center gap-2 border-b px-3 py-2">
         <FileUp className="h-4 w-4" />
         <h2 className="text-sm font-semibold">Import Data</h2>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Info className="ml-auto h-3.5 w-3.5 cursor-help text-muted-foreground" />
-          </TooltipTrigger>
-          <TooltipContent side="bottom" className="max-w-56">
-            Import geospatial data files. A new layer is automatically created
-            and features are rendered on the map.
-          </TooltipContent>
-        </Tooltip>
+        <HelpTooltip
+          title="Import Data"
+          description="Upload geospatial files from your computer. A new layer is automatically created and your data appears on the map. Supports common GIS formats including GeoJSON, Shapefiles, KML, GPX, CSV with coordinates, and FlatGeobuf."
+          arcgisEquivalent="Add Data / Add Layer from File"
+          className="ml-auto"
+        />
       </div>
 
       <div className="flex-1 space-y-3 overflow-y-auto p-3">
@@ -118,6 +116,10 @@ export function ImportPanelView({
             {error}
           </p>
         )}
+
+        <div className="border-t pt-3">
+          <SampleDataSection />
+        </div>
       </div>
 
       <div className="border-t p-3">

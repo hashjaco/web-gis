@@ -1,4 +1,4 @@
-import { Check, Mail, Users, Zap } from "lucide-react";
+import { Check, GraduationCap, Mail, Users, Zap } from "lucide-react";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -34,6 +34,24 @@ const TIERS: Tier[] = [
     ],
     cta: "Get Started Free",
     ctaHref: "/sign-up",
+  },
+  {
+    name: "Student",
+    price: "$10",
+    period: "/mo",
+    description: "Discounted plan for students with a verified .edu email",
+    icon: GraduationCap,
+    features: [
+      "Everything in Free",
+      "10 projects, 25 layers",
+      "Spatial analysis (buffer, intersect, cluster)",
+      "Visualization (heatmaps, hexbins)",
+      "Learning hub & guided exercises",
+      "Sample datasets included",
+      "500 MB storage",
+    ],
+    cta: "Start Student Plan",
+    ctaHref: "/sign-up?plan=edu",
   },
   {
     name: "Pro",
@@ -76,6 +94,23 @@ const TIERS: Tier[] = [
     ctaHref: "/sign-up?plan=team",
   },
   {
+    name: "Classroom",
+    price: "$99",
+    period: "/mo",
+    description: "Flat-rate plan for professors and departments teaching GIS",
+    icon: GraduationCap,
+    features: [
+      "Everything in Pro",
+      "Shared classroom workspace",
+      "Up to 30 student seats included",
+      "Real-time collaboration built-in",
+      "10 GB shared storage",
+      "Semester-based billing available",
+    ],
+    cta: "Start Classroom Trial",
+    ctaHref: "/sign-up?plan=classroom",
+  },
+  {
     name: "Enterprise",
     price: "Custom",
     description: "For organizations with advanced security & scale needs",
@@ -115,6 +150,14 @@ const FAQ = [
     q: "Do you offer annual billing?",
     a: "Yes. Annual billing saves ~17% — Pro is $24/mo billed annually, and Team is $15/seat/mo billed annually.",
   },
+  {
+    q: "How does the Student plan work?",
+    a: "Sign up with a .edu email address to qualify for the Student plan at $10/month — a 65% discount off Pro. It includes spatial analysis and visualization tools designed to help you learn GIS concepts while keeping costs low.",
+  },
+  {
+    q: "What is the Classroom plan?",
+    a: "The Classroom plan is a flat $99/month for up to 30 student seats — ideal for professors, departments, or training programs. It includes all Pro features plus real-time collaboration, so your entire class can work together on the same project.",
+  },
 ];
 
 export default function PricingPage() {
@@ -125,12 +168,12 @@ export default function PricingPage() {
           Simple, transparent pricing
         </h1>
         <p className="mx-auto mt-3 max-w-xl text-base text-muted-foreground">
-          Start free. Upgrade when you need more power. No hidden fees, no
-          credit card required to start.
+          Start free. Students get analysis tools for just $10/mo. Upgrade when
+          you need more power. No hidden fees, no credit card required.
         </p>
       </div>
 
-      <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
         {TIERS.map((tier) => (
           <div
             key={tier.name}

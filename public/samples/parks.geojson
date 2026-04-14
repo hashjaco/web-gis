@@ -1,0 +1,14 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {"type":"Feature","geometry":{"type":"Polygon","coordinates":[[[-73.981,40.764],[-73.958,40.764],[-73.958,40.8],[-73.981,40.8],[-73.981,40.764]]]},"properties":{"name":"Central Park","city":"New York","area_acres":843,"type":"Urban Park"}},
+    {"type":"Feature","geometry":{"type":"Polygon","coordinates":[[[-122.513,37.764],[-122.453,37.764],[-122.453,37.775],[-122.513,37.775],[-122.513,37.764]]]},"properties":{"name":"Golden Gate Park","city":"San Francisco","area_acres":1017,"type":"Urban Park"}},
+    {"type":"Feature","geometry":{"type":"Polygon","coordinates":[[[-0.185,51.502],[-0.15,51.502],[-0.15,51.514],[-0.185,51.514],[-0.185,51.502]]]},"properties":{"name":"Hyde Park","city":"London","area_acres":350,"type":"Royal Park"}},
+    {"type":"Feature","geometry":{"type":"Point","coordinates":[-73.965,40.781]},"properties":{"name":"Belvedere Castle","city":"New York","type":"Landmark","within":"Central Park"}},
+    {"type":"Feature","geometry":{"type":"Point","coordinates":[-73.971,40.776]},"properties":{"name":"Bethesda Fountain","city":"New York","type":"Fountain","within":"Central Park"}},
+    {"type":"Feature","geometry":{"type":"Point","coordinates":[-73.975,40.786]},"properties":{"name":"Reservoir","city":"New York","type":"Water Feature","within":"Central Park"}},
+    {"type":"Feature","geometry":{"type":"LineString","coordinates":[[-73.981,40.768],[-73.976,40.773],[-73.97,40.778],[-73.967,40.784],[-73.96,40.794],[-73.958,40.8]]},"properties":{"name":"Central Park Loop","city":"New York","type":"Path","length_mi":6.1}},
+    {"type":"Feature","geometry":{"type":"Polygon","coordinates":[[[2.22,48.86],[2.235,48.86],[2.235,48.867],[2.22,48.867],[2.22,48.86]]]},"properties":{"name":"Tuileries Garden","city":"Paris","area_acres":63,"type":"Historic Garden"}},
+    {"type":"Feature","geometry":{"type":"Polygon","coordinates":[[[13.35,52.51],[13.38,52.51],[13.38,52.52],[13.35,52.52],[13.35,52.51]]]},"properties":{"name":"Tiergarten","city":"Berlin","area_acres":520,"type":"Urban Park"}}
+  ]
+}

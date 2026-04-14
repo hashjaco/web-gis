@@ -23,6 +23,7 @@ export async function getGuestLayers(): Promise<LayerConfig[]> {
 }
 
 export async function addGuestLayer(layer: LayerConfig): Promise<void> {
+  if (!layer.id) return;
   await set(layer.id, layer, layerStore);
 }
 
@@ -30,6 +31,7 @@ export async function updateGuestLayer(
   id: string,
   patch: Partial<LayerConfig>,
 ): Promise<LayerConfig | null> {
+  if (!id) return null;
   const existing = await get<LayerConfig>(id, layerStore);
   if (!existing) return null;
   const updated = { ...existing, ...patch };
@@ -38,6 +40,7 @@ export async function updateGuestLayer(
 }
 
 export async function removeGuestLayer(id: string): Promise<void> {
+  if (!id) return;
   await del(id, layerStore);
   const featureKeys = await keys<string>(featureStore);
   const toDelete = [];

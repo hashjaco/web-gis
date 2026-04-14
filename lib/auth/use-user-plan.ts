@@ -18,12 +18,15 @@ export function useUserPlan(): {
   canAccess: (featureId: string) => boolean;
   hasCollaboration: boolean;
   isGuest: boolean;
+  isEdu: boolean;
   isPro: boolean;
   isTeam: boolean;
+  isClassroom: boolean;
   isAdmin: boolean;
 } {
   const { user } = useUser();
-  const { organization } = useOrganization();
+  const orgResult = useOrganization();
+  const organization = user ? orgResult.organization : null;
 
   const userMeta = user?.publicMetadata as Record<string, unknown> | undefined;
   const orgMeta = organization?.publicMetadata as
@@ -56,8 +59,10 @@ export function useUserPlan(): {
     },
     hasCollaboration: hasAddOn(addOns, "collaboration"),
     isGuest: plan === "guest",
+    isEdu: hasAccess(plan, "edu"),
     isPro: hasAccess(plan, "pro"),
     isTeam: hasAccess(plan, "team"),
+    isClassroom: hasAccess(plan, "classroom"),
     isAdmin: hasAccess(plan, "admin"),
   };
 }

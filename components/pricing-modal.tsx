@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, Loader2, Mail, Sparkles, Users, X, Zap } from "lucide-react";
+import { Check, GraduationCap, Loader2, Mail, Sparkles, Users, X, Zap } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useUser } from "@clerk/nextjs";
 import { useUserPlan } from "@/lib/auth/use-user-plan";
@@ -49,6 +49,22 @@ const TIERS: PlanTier[] = [
     cta: "Current Plan",
   },
   {
+    name: "Student",
+    price: "$10",
+    period: "/mo",
+    description: "Discounted plan for verified .edu students",
+    planKey: "edu",
+    features: [
+      "Everything in Free",
+      "10 projects, 25 layers",
+      "Spatial analysis & visualization",
+      "Learning hub & guided exercises",
+      "Sample datasets included",
+      "500 MB storage",
+    ],
+    cta: "Start Student Plan",
+  },
+  {
     name: "Pro",
     price: "$29",
     period: "/mo",
@@ -83,6 +99,21 @@ const TIERS: PlanTier[] = [
       "Min 3 seats",
     ],
     cta: "Start Team Trial",
+  },
+  {
+    name: "Classroom",
+    price: "$99",
+    period: "/mo",
+    description: "Flat-rate plan for professors and departments",
+    planKey: "classroom",
+    features: [
+      "Everything in Pro",
+      "Shared classroom workspace",
+      "Up to 30 student seats",
+      "Collaboration built-in",
+      "10 GB shared storage",
+    ],
+    cta: "Start Classroom Trial",
   },
   {
     name: "Enterprise",
@@ -137,7 +168,7 @@ export function PricingModal({ open, onClose }: PricingModalProps) {
     <dialog
       ref={dialogRef}
       onClose={onClose}
-      className="m-auto w-full max-w-4xl rounded-xl border bg-background p-0 shadow-2xl backdrop:bg-black/50"
+      className="m-auto w-full max-w-5xl rounded-xl border bg-background p-0 shadow-2xl backdrop:bg-black/50"
     >
       <div className="flex items-center justify-between border-b px-6 py-4">
         <div className="flex items-center gap-2">
@@ -153,7 +184,7 @@ export function PricingModal({ open, onClose }: PricingModalProps) {
         </button>
       </div>
 
-      <div className="grid gap-4 p-6 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 p-6 sm:grid-cols-2 lg:grid-cols-3">
         {TIERS.map((tier) => {
           const isCurrent = tier.planKey === currentPlan;
           const IconComponent =
@@ -161,7 +192,9 @@ export function PricingModal({ open, onClose }: PricingModalProps) {
               ? Mail
               : tier.planKey === "team"
                 ? Users
-                : Zap;
+                : tier.planKey === "edu" || tier.planKey === "classroom"
+                  ? GraduationCap
+                  : Zap;
 
           return (
             <div
