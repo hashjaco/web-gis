@@ -1,4 +1,5 @@
-import { Check, GraduationCap, Mail, Users, Zap } from "lucide-react";
+import { ArrowLeft, Check, GraduationCap, Mail, Users, Zap } from "lucide-react";
+import Link from "next/link";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -163,6 +164,14 @@ const FAQ = [
 export default function PricingPage() {
   return (
     <main className="mx-auto max-w-6xl px-6 py-16">
+      <Link
+        href="/"
+        className="mb-10 inline-flex items-center gap-2 text-sm font-medium text-foreground transition-colors hover:text-primary"
+      >
+        <ArrowLeft className="h-4 w-4" />
+        Back to app
+      </Link>
+
       <div className="text-center">
         <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">
           Simple, transparent pricing

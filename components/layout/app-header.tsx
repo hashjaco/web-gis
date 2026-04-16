@@ -83,13 +83,16 @@ export function AppHeader({ onCreateProject }: AppHeaderProps) {
   return (
     <header className="flex h-12 shrink-0 items-center justify-between border-b bg-background px-4">
       <div className="flex items-center gap-3">
-        <div className="flex items-center gap-1.5">
+        <a
+          href={process.env.NEXT_PUBLIC_MARKETING_URL ?? "/"}
+          className="flex items-center gap-1.5 transition-opacity hover:opacity-80"
+        >
           <LogoMark size={28} />
           <span className="text-sm font-semibold tracking-tight">
             <span className="text-primary">Shim</span>
             <span>GIS</span>
           </span>
-        </div>
+        </a>
         {activeProject && (
           <>
             <span className="text-muted-foreground">/</span>
